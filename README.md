@@ -17,24 +17,32 @@ Our project for NexHacks 2026 @ CMU
 npm install
 ```
 
-### 2. Set Up Environment Variables
+### 2. Set Up Supabase (Optional)
 
-Copy the example environment file:
+You have two options for connecting to Supabase:
+
+**Option A: Use the UI (Recommended)**
+- Start the dev server and navigate to http://localhost:3000
+- Click "Add Credentials" on the dashboard
+- Enter your Supabase URL and API key
+- Credentials are saved in your browser's localStorage
+
+**Option B: Use Environment Variables**
+- Copy `.env.local.example` to `.env.local`
+- Add your Supabase credentials to `.env.local`
+
+### 3. Run Local PostgreSQL (Optional)
+
+Want to test with a local database instead? We've included a Docker setup:
 
 ```bash
-cp .env.local.example .env.local
+cd database
+./start.sh
 ```
 
-Then edit `.env.local` and add your Supabase credentials:
+This will spin up a PostgreSQL database with sample data. See `database/README.md` for details.
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=your-project-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-```
-
-You can get these from your [Supabase project settings](https://app.supabase.com).
-
-### 3. Run Development Server
+### 4. Run Development Server
 
 ```bash
 npm run dev
@@ -49,7 +57,13 @@ Open [http://localhost:3000](http://localhost:3000) to see your app.
 ├── app/
 │   ├── globals.css          # Global styles with Tailwind directives
 │   ├── layout.tsx           # Root layout component
-│   └── page.tsx             # Home page
+│   └── page.tsx             # Home page with credentials manager
+├── database/
+│   ├── docker-compose.yml   # PostgreSQL Docker setup
+│   ├── init.sql             # Database initialization script
+│   ├── start.sh             # Script to start database
+│   ├── stop.sh              # Script to stop database
+│   └── README.md            # Database documentation
 ├── lib/
 │   └── supabase.ts          # Supabase client configuration
 ├── .env.local.example       # Environment variables template
@@ -58,16 +72,52 @@ Open [http://localhost:3000](http://localhost:3000) to see your app.
 
 ## Using Supabase
 
+### Managing Credentials
+
+The app includes a built-in credentials manager on the dashboard:
+- **Add/Update**: Enter your Supabase URL and API key through the UI
+- **View**: See your saved credentials (API key is partially hidden)
+- **Clear**: Remove saved credentials from localStorage
+- **Auto-connect**: Credentials are loaded automatically on page refresh
+
+### Using the Supabase Client
+
 The Supabase client is initialized in `lib/supabase.ts`:
 
 ```typescript
-import { supabase } from '@/lib/supabase';
+import { getSupabaseClient } from '@/lib/supabase';
+
+// Get client with saved credentials (or env variables)
+const supabase = getSupabaseClient();
 
 // Example: Query data
 const { data, error } = await supabase
   .from('your_table')
   .select('*');
 ```
+
+## Local PostgreSQL Database
+
+A Docker-based PostgreSQL setup is included in the `database/` directory:
+
+**Quick Start:**
+```bash
+cd database
+./start.sh
+```
+
+**Connection Details:**
+- Host: `localhost`
+- Port: `5432`
+- Database: `nexhacks`
+- Username: `postgres`
+- Password: `postgres`
+
+**Sample Tables:**
+- `sample_data` - 3 sample items for testing
+- `users` - 2 sample users
+
+See `database/README.md` for full documentation.
 
 ## Available Scripts
 
@@ -78,10 +128,12 @@ const { data, error } = await supabase
 
 ## Next Steps
 
-1. Create tables in your Supabase project
-2. Build your application features
-3. Add more pages in the `app/` directory
-4. Create reusable components
+1. Set up your Supabase credentials via the dashboard UI
+2. Or run the local PostgreSQL database for testing
+3. Create additional tables in your database
+4. Build your application features
+5. Add more pages in the `app/` directory
+6. Create reusable components
 
 ## Learn More
 
