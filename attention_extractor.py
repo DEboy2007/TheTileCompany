@@ -204,15 +204,184 @@ def get_high_attention_regions(attention_map, threshold=0.5):
     return high_attn
 
 
+def create_pruned_image(img, attention_map, threshold=0.3, fill_color=(128, 128, 128)):
+    """Create a pruned image by masking low-attention regions"""
+
+    img_array = np.array(img)
+    mask = attention_map < threshold
+
+    # Create pruned image
+    pruned_array = img_array.copy()
+    pruned_array[mask] = fill_color  # Fill low-attention areas with gray
+
+    pruned_img = Image.fromarray(pruned_array)
+    return pruned_img, mask
+
+
+def get_model_embedding(model, img):
+    """Get the CLS token embedding (semantic representation) from the model"""
+
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+
+    img_tensor = transform(img).unsqueeze(0)
+
+    with torch.no_grad():
+        # Get features - DINOv2 returns CLS token by default
+        features = model(img_tensor)
+
+    return features
+
+
+def compare_embeddings(emb1, emb2):
+    """Compare two embeddings using cosine similarity"""
+
+    # Normalize
+    emb1_norm = emb1 / emb1.norm(dim=-1, keepdim=True)
+    emb2_norm = emb2 / emb2.norm(dim=-1, keepdim=True)
+
+    # Cosine similarity
+    similarity = (emb1_norm @ emb2_norm.T).item()
+
+    return similarity
+
+
+def test_pruning_accuracy(model, original_img, attention_map, thresholds=[0.2, 0.3, 0.4, 0.5, 0.6, 0.7]):
+    """Test how well the model recognizes pruned images at different thresholds"""
+
+    print("\n" + "=" * 70)
+    print("PRUNING ACCURACY TEST")
+    print("=" * 70)
+
+    # Get original embedding
+    original_emb = get_model_embedding(model, original_img)
+
+    results = []
+
+    print(f"\n{'Threshold':<12} {'Pixels Kept':<15} {'Tokens Kept':<15} {'Similarity':<12} {'Status'}")
+    print("-" * 70)
+
+    patch_size = 14
+    total_patches = (original_img.size[0] // patch_size) * (original_img.size[1] // patch_size)
+
+    for thresh in thresholds:
+        # Create pruned image
+        pruned_img, mask = create_pruned_image(original_img, attention_map, threshold=thresh)
+
+        # Get pruned embedding
+        pruned_emb = get_model_embedding(model, pruned_img)
+
+        # Compare
+        similarity = compare_embeddings(original_emb, pruned_emb)
+
+        # Calculate metrics
+        pixels_kept = (~mask).sum() / mask.size * 100
+
+        # Estimate tokens kept (based on patch-level attention)
+        h_patches = original_img.size[1] // patch_size
+        w_patches = original_img.size[0] // patch_size
+        patch_attention = attention_map.reshape(h_patches, patch_size, w_patches, patch_size).mean(axis=(1, 3))
+        tokens_kept = (patch_attention >= thresh).sum() / total_patches * 100
+
+        # Status
+        if similarity > 0.95:
+            status = "✓ Excellent"
+        elif similarity > 0.90:
+            status = "✓ Good"
+        elif similarity > 0.80:
+            status = "~ Acceptable"
+        else:
+            status = "✗ Poor"
+
+        results.append({
+            'threshold': thresh,
+            'pixels_kept': pixels_kept,
+            'tokens_kept': tokens_kept,
+            'similarity': similarity,
+            'pruned_img': pruned_img
+        })
+
+        print(f"{thresh:<12.1%} {pixels_kept:<15.1f}% {tokens_kept:<15.1f}% {similarity:<12.4f} {status}")
+
+    return results
+
+
+def plot_pruning_comparison(original_img, results, output_path='pruning_comparison.png'):
+    """Plot original vs pruned images at different thresholds"""
+
+    n_results = len(results)
+    fig, axes = plt.subplots(2, (n_results + 2) // 2, figsize=(4 * ((n_results + 2) // 2), 8))
+    axes = axes.flatten()
+
+    # Original image
+    axes[0].imshow(original_img)
+    axes[0].set_title('Original\n100% pixels, 100% tokens')
+    axes[0].axis('off')
+
+    # Pruned images
+    for i, result in enumerate(results):
+        axes[i + 1].imshow(result['pruned_img'])
+        axes[i + 1].set_title(f"Threshold {result['threshold']:.0%}\n{result['pixels_kept']:.1f}% pixels, Sim: {result['similarity']:.3f}")
+        axes[i + 1].axis('off')
+
+    # Hide extra axes
+    for i in range(len(results) + 1, len(axes)):
+        axes[i].axis('off')
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    print(f"\n✓ Saved pruning comparison to: {output_path}")
+    plt.show()
+
+
+def plot_metrics(results, output_path='pruning_metrics.png'):
+    """Plot pruning metrics"""
+
+    thresholds = [r['threshold'] for r in results]
+    similarities = [r['similarity'] for r in results]
+    pixels_kept = [r['pixels_kept'] for r in results]
+    tokens_kept = [r['tokens_kept'] for r in results]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
+
+    # Similarity vs Threshold
+    ax1.plot(thresholds, similarities, 'b-o', linewidth=2, markersize=8)
+    ax1.axhline(y=0.95, color='g', linestyle='--', label='Excellent (>0.95)')
+    ax1.axhline(y=0.90, color='orange', linestyle='--', label='Good (>0.90)')
+    ax1.axhline(y=0.80, color='r', linestyle='--', label='Acceptable (>0.80)')
+    ax1.set_xlabel('Attention Threshold', fontsize=12)
+    ax1.set_ylabel('Cosine Similarity to Original', fontsize=12)
+    ax1.set_title('Model Recognition Accuracy vs Pruning Level', fontsize=14)
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+    ax1.set_ylim(0.5, 1.02)
+
+    # Tokens/Pixels kept vs Threshold
+    ax2.plot(thresholds, pixels_kept, 'r-s', linewidth=2, markersize=8, label='Pixels Kept %')
+    ax2.plot(thresholds, tokens_kept, 'b-o', linewidth=2, markersize=8, label='Tokens Kept %')
+    ax2.set_xlabel('Attention Threshold', fontsize=12)
+    ax2.set_ylabel('Percentage Kept', fontsize=12)
+    ax2.set_title('Compression Rate vs Threshold', fontsize=14)
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    print(f"✓ Saved metrics plot to: {output_path}")
+    plt.show()
+
+
 def main():
     print("=" * 60)
-    print("ATTENTION MAP EXTRACTION - DINOv2")
+    print("ATTENTION-BASED IMAGE PRUNING")
     print("=" * 60)
 
     # Load model
     model = load_model()
 
-    # Test image
+    # Test image (dog)
     test_url = "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600"
 
     print(f"\nLoading test image...")
@@ -224,21 +393,42 @@ def main():
     attentions, patch_grid = get_attention_maps(model, img)
     print(f"✓ Extracted attention from {len(attentions)} layers")
 
-    # Visualize last layer attention (most semantic)
-    print("\nGenerating visualization...")
+    # Visualize last layer attention
+    print("\nGenerating attention visualization...")
     attention_map = visualize_attention(img, attentions, patch_grid, layer=-1)
 
-    # Analyze high attention regions
-    get_high_attention_regions(attention_map, threshold=0.3)
-    get_high_attention_regions(attention_map, threshold=0.5)
-    get_high_attention_regions(attention_map, threshold=0.7)
-
-    # Plot results
+    # Plot attention results
     plot_results(img, attention_map)
 
-    # Plot all layers
-    print("\nGenerating all-layers visualization...")
-    plot_all_layers(img, attentions, patch_grid)
+    # Test pruning at different thresholds
+    results = test_pruning_accuracy(model, img, attention_map)
+
+    # Plot comparisons
+    print("\nGenerating comparison visualizations...")
+    plot_pruning_comparison(img, results)
+    plot_metrics(results)
+
+    # Summary
+    print("\n" + "=" * 70)
+    print("SUMMARY")
+    print("=" * 70)
+
+    # Find best threshold (highest compression with >0.95 similarity)
+    best_result = None
+    for r in results:
+        if r['similarity'] > 0.95:
+            best_result = r
+
+    if best_result:
+        compression = 100 - best_result['tokens_kept']
+        print(f"\n🎯 BEST RESULT (>95% accuracy):")
+        print(f"   Threshold: {best_result['threshold']:.0%}")
+        print(f"   Tokens kept: {best_result['tokens_kept']:.1f}%")
+        print(f"   Compression: {compression:.1f}% reduction")
+        print(f"   Similarity: {best_result['similarity']:.4f}")
+    else:
+        print("\n⚠️ No threshold achieved >95% similarity")
+        print("   Consider using a lower threshold or different attention layer")
 
     print("\n" + "=" * 60)
     print("DONE!")
