@@ -11,7 +11,7 @@ token_client = tokenc.TokenClient(
     api_key=os.getenv("TOKENCOMPANY")
 )
 
-# Initialize Gemini via LangChain
+# Initialize Gemini via LangCha
 llm = ChatGoogleGenerativeAI(
     model="gemini-flash-latest",  # or "gemini-1.5-pro" for better results
     google_api_key=os.getenv("GOOGLE_API_KEY"),
