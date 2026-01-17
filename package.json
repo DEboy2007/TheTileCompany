@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "Our project for NexHacks 2026 @ CMU",
   "main": "index.js",
+  "type": "module",
+
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -16,7 +18,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/DEboy2007/NexHacksProject/issues"
   },
@@ -28,6 +29,7 @@
     "react-dom": "^19.2.3"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
     "@types/node": "^25.0.9",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",
