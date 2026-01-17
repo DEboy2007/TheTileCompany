@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-amber-50 via-white to-orange-50;
+  }
+
+  input[type="radio"] {
+    @apply accent-amber-600;
+  }
+
+  textarea::placeholder,
+  input::placeholder {
+    @apply text-gray-500;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-4 py-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium transition-colors shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply px-4 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium transition-colors border border-gray-200;
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-100 p-6;
+  }
+}
