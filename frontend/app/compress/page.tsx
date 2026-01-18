@@ -12,6 +12,7 @@ interface CompressionResult {
   reduction_pct: number; // Actual percentage of pixels saved
   gray_overlay_base64: string; // Base64 encoded gray overlay image (attention visualization)
   compressed_image_base64: string; // Base64 encoded compressed image
+  runtime?: number; // Time taken for compression in seconds
   stats: {
     original_size: [number, number]; // [width, height] of original image
     compressed_size: [number, number]; // [width, height] of compressed image
@@ -79,6 +80,7 @@ export default function CompressPage() {
     setError(null);
     setResult(null);
 
+    const startTime = performance.now();
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
 
@@ -103,6 +105,9 @@ export default function CompressPage() {
         signal: controller.signal,
       });
 
+      const endTime = performance.now();
+      const runtime = (endTime - startTime) / 1000; // Convert to seconds
+
       clearTimeout(timeoutId);
 
       if (!response.ok) {
@@ -125,7 +130,7 @@ export default function CompressPage() {
         if (!data.compressed_image_base64 || !data.stats) {
           throw new Error('Invalid response structure from server');
         }
-        setResult(data);
+        setResult({ ...data, runtime });
       } else {
         setError(data.message || 'Compression failed');
       }
@@ -296,6 +301,14 @@ export default function CompressPage() {
                           {result.stats.pixels_saved.toLocaleString()}
                         </span>
                       </div>
+                      {result.runtime && (
+                        <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
+                          <span className="text-gray-600">Runtime:</span>
+                          <span className="font-bold text-[var(--color-dark)]">
+                            {result.runtime.toFixed(2)}s
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
