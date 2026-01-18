@@ -1,5 +1,6 @@
 /.env
 nexhacks/
+data_raw/
 # dependencies
 /node_modules
 /.pnp
