@@ -40,3 +40,6 @@ frontend/next-env.d.ts
 
 # Project specific
 nexhacks/
+
+__pycache__
+*/__pycache__
