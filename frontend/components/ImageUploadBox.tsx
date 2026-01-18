@@ -6,7 +6,11 @@ export interface ImageUploadBoxHandle {
   triggerUpload: () => void;
 }
 
-const ImageUploadBox = forwardRef<ImageUploadBoxHandle>((props, ref) => {
+interface ImageUploadBoxProps {
+  onImageUpload?: (base64Image: string) => void;
+}
+
+const ImageUploadBox = forwardRef<ImageUploadBoxHandle, ImageUploadBoxProps>(({ onImageUpload }, ref) => {
   const [image, setImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -15,7 +19,11 @@ const ImageUploadBox = forwardRef<ImageUploadBoxHandle>((props, ref) => {
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
-        setImage(event.target?.result as string);
+        const result = event.target?.result as string;
+        setImage(result);
+        if (onImageUpload) {
+          onImageUpload(result);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -52,14 +60,25 @@ const ImageUploadBox = forwardRef<ImageUploadBoxHandle>((props, ref) => {
           </div>
         </div>
       ) : (
-        <div className="w-full flex items-center justify-center p-6" style={{
-          animation: 'zoomIn 0.5s ease-out forwards',
-        }}>
-          <img
-            src={image}
-            alt="Uploaded preview"
-            className="max-w-full max-h-80 rounded-lg object-cover"
-          />
+        <div className="w-full space-y-4">
+          <div className="w-full flex items-center justify-center p-6" style={{
+            animation: 'zoomIn 0.5s ease-out forwards',
+          }}>
+            <img
+              src={image}
+              alt="Uploaded preview"
+              className="max-w-full max-h-80 rounded-lg object-cover"
+            />
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              fileInputRef.current?.click();
+            }}
+            className="w-full py-2 px-4 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+          >
+            Change Image
+          </button>
         </div>
       )}
       <style>{`
