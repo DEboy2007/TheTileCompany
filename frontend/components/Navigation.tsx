@@ -14,28 +14,29 @@ export default function Navigation() {
   ];
 
   return (
-    <nav className="bg-white border-b border-gray-200 shadow-sm">
+    <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <Link href="/" className="text-xl font-bold text-gray-900">
-              NexHacks
-            </Link>
-            <div className="flex gap-1">
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                    pathname === link.href
-                      ? 'bg-blue-100 text-blue-900'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
+          <Link href="/" className="text-sm font-semibold tracking-wide text-[var(--color-dark)]" style={{ fontFamily: 'var(--font-mono)' }}>
+            THE TILE COMPANY
+          </Link>
+          <div className="flex gap-8">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`text-sm font-medium transition-colors relative ${
+                  pathname === link.href
+                    ? 'text-[var(--color-dark)]'
+                    : 'text-gray-600 hover:text-[var(--color-dark)]'
+                }`}
+              >
+                {link.label}
+                {pathname === link.href && (
+                  <span className="absolute bottom-0 left-0 right-0 h-px bg-[var(--color-dark)]"></span>
+                )}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
