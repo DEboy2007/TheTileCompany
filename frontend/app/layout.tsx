@@ -3,8 +3,8 @@ import "./globals.css";
 import Navigation from "@/components/Navigation";
 
 export const metadata: Metadata = {
-  title: "NexHacks Project",
-  description: "AI-powered analytics platform",
+  title: "TheTileCompany",
+  description: "Garbage collect your pixels",
 };
 
 export default function RootLayout({

@@ -37,7 +37,7 @@ export default function Home() {
     {
       id: 'hero',
       label: 'Upload',
-      title: 'Supercharge LLM performance by removing redundant pixels',
+      title: 'Cut visual noise, accelerate image processing',
       content: (
         <p>
           Our intelligent pixel pruning technology identifies and removes irrelevant pixels, cutting inference costs and accelerating LLM performance.
@@ -49,7 +49,7 @@ export default function Home() {
             {!processedImage ? (
               <div className="space-y-6">
                 <h1 className="text-5xl text-[var(--color-dark)] mb-6 mt-8 first:mt-0 font-serif leading-tight">
-                  Supercharge LLM performance by removing redundant pixels
+                 Cut visual noise, accelerate image processing
                 </h1>
                 <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
                   Remove just the lowest 30% of relevant pixels to achieve significant token reduction while preserving complete semantic integrity. Our intelligent pixel pruning technology identifies and removes irrelevant pixels, cutting inference costs and accelerating LLM performance.
