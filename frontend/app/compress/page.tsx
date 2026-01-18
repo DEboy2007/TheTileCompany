@@ -158,12 +158,12 @@ export default function CompressPage() {
   };
 
   return (
-    <main className="bg-[#FAF9F5] min-h-screen">
+    <main className="bg-[#FAF9F5] min-h-screen font-mono">
       <section className="px-6 py-20">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-12 text-center">
-            <h1 className="text-5xl text-[var(--color-dark)] mb-4 font-serif">
+            <h1 className="text-5xl text-[var(--color-dark)] mb-4 font-mono font-semibold">
               Image Compression
             </h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -176,7 +176,7 @@ export default function CompressPage() {
             <div className="space-y-6">
               {/* Upload Box */}
               <div className="bg-white p-6 border border-gray-200 rounded-lg">
-                <h2 className="text-xl font-bold text-[var(--color-dark)] mb-4">
+                <h2 className="text-xl font-bold text-[var(--color-dark)] mb-4 font-mono">
                   Upload Image
                 </h2>
                 <ImageUploadBox
@@ -189,7 +189,7 @@ export default function CompressPage() {
               {/* Compression Controls */}
               {uploadedImage && (
                 <div className="bg-white p-6 border border-gray-200 rounded-lg">
-                  <h2 className="text-xl font-bold text-[var(--color-dark)] mb-4">
+                  <h2 className="text-xl font-bold text-[var(--color-dark)] mb-4 font-mono">
                     Compression Settings
                   </h2>
 
@@ -236,7 +236,7 @@ export default function CompressPage() {
                     <button
                       onClick={handleCompress}
                       disabled={isCompressing}
-                      className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all cursor-pointer disabled:pointer-events-none disabled:opacity-50 outline-none bg-black text-[#FAF9F5] hover:bg-black/90 h-10 px-8 py-2 font-mono"
+                      className="w-full inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all cursor-pointer disabled:pointer-events-none disabled:opacity-50 outline-none bg-black text-[#FAF9F5] hover:bg-black/90 h-10 px-8 py-2"
                     >
                       {isCompressing ? (
                         <>
@@ -268,31 +268,31 @@ export default function CompressPage() {
                 <>
                   {/* Statistics */}
                   <div className="bg-white p-6 border border-gray-200 rounded-lg">
-                    <h2 className="text-xl font-bold text-[var(--color-dark)] mb-4">
+                    <h2 className="text-xl font-bold text-[var(--color-dark)] mb-4 font-mono">
                       Compression Results
                     </h2>
                     <div className="space-y-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Reduction:</span>
-                        <span className="font-mono font-bold text-[var(--color-dark)]">
+                        <span className="text-gray-600">Token Reduction:</span>
+                        <span className=" font-bold text-[var(--color-dark)]">
                           {result.reduction_pct.toFixed(1)}%
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Original Size:</span>
-                        <span className="font-mono">
+                        <span className="">
                           {result.stats.original_size[0]} x {result.stats.original_size[1]}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Compressed Size:</span>
-                        <span className="font-mono">
+                        <span className="">
                           {result.stats.compressed_size[0]} x {result.stats.compressed_size[1]}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Pixels Saved:</span>
-                        <span className="font-mono">
+                        <span className="">
                           {result.stats.pixels_saved.toLocaleString()}
                         </span>
                       </div>
@@ -302,7 +302,7 @@ export default function CompressPage() {
                   {/* Compressed Image */}
                   <div className="bg-white p-6 border border-gray-200 rounded-lg">
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-bold text-[var(--color-dark)]">
+                      <h2 className="text-xl font-bold text-[var(--color-dark)] font-mono">
                         Compressed Image
                       </h2>
                       <button
