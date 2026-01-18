@@ -1,12 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800;900&family=Lora:wght@400;500;600&display=swap');
+
 @import "tailwindcss";
+
+:root {
+  --color-cream: #faf8f3;
+  --color-warm-orange: #f97316;
+  --color-deep-orange: #ea580c;
+  --color-accent-yellow: #fbbf24;
+  --color-dark: #1a1a1a;
+  --color-text: #2d2d2d;
+  --font-serif: 'Playfair Display', serif;
+  --font-body: 'Lora', serif;
+}
 
 @layer base {
   body {
-    @apply bg-gradient-to-br from-amber-50 via-white to-orange-50;
+    @apply bg-[var(--color-cream)] text-[var(--color-text)];
+    font-family: var(--font-body);
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
   }
 
   input[type="radio"] {
-    @apply accent-amber-600;
+    @apply accent-[var(--color-warm-orange)];
   }
 
   textarea::placeholder,
@@ -17,14 +35,30 @@
 
 @layer components {
   .btn-primary {
-    @apply px-4 py-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-medium transition-colors shadow-sm disabled:bg-gray-300 disabled:cursor-not-allowed;
+    @apply px-6 py-3 rounded-lg bg-[var(--color-warm-orange)] hover:bg-[var(--color-deep-orange)] text-white font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply px-4 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium transition-colors border border-gray-200;
+    @apply px-6 py-3 rounded-lg bg-[var(--color-dark)] hover:bg-black text-white font-semibold transition-all duration-200;
+  }
+
+  .btn-outline {
+    @apply px-6 py-3 rounded-lg border-2 border-[var(--color-warm-orange)] text-[var(--color-warm-orange)] hover:bg-[var(--color-warm-orange)] hover:text-white font-semibold transition-all duration-200;
   }
 
   .card {
     @apply bg-white rounded-lg shadow-sm border border-gray-100 p-6;
+  }
+
+  .serif-display {
+    font-family: var(--font-serif);
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .section-label {
+    @apply text-sm font-semibold tracking-widest uppercase text-[var(--color-warm-orange)];
   }
 }

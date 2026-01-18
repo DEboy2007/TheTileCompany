@@ -1,3 +1,10 @@
+/.env
+nexhacks/
+data_raw/
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
 # Root level
 .DS_Store
 *.pem
