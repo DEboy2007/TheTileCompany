@@ -19,8 +19,6 @@ from pathlib import Path
 BACKEND_URL = "http://localhost:5001"
 CACHE_DIR = Path("cache/compressed_images")
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
-
 def check_backend_health():
     """Check if backend server is running and accessible."""
     try:
@@ -199,7 +197,6 @@ def main():
     then query them with a Vision Transformer-based chatbot.
     """)
 
-    # Check if backend server is running
     if not check_backend_health():
         st.error(f"""
         **Backend server is not running!**
@@ -247,16 +244,6 @@ def main():
     if 'chat_history' not in st.session_state:
         st.session_state.chat_history = []
 
-    # Sidebar - Caption temperature
-    st.sidebar.divider()
-    caption_temperature = st.sidebar.slider(
-        "Caption Temperature",
-        min_value=0.0,
-        max_value=1.0,
-        value=0.3,
-        step=0.1,
-        help="Lower = more deterministic captions"
-    )
 
     # Image upload section
     st.header("1. Upload Images")
@@ -299,9 +286,7 @@ def main():
                         st.image(result['compressed_image'], use_container_width=True)
 
                     # Display stats
-                    st.success(f"✓ Compressed! {result['reduction_pct']:.1f}% reduction")
-                    if result.get('from_cache'):
-                        st.info("Loaded from cache")
+                    st.success(f"✓ Compressed: {result['reduction_pct']:.1f}% reduction")
 
                     # Add to session state
                     st.session_state.compressed_images.append({
@@ -330,13 +315,13 @@ def main():
                             original_image,
                             models['blip_processor'],
                             models['blip_model'],
-                            temperature=caption_temperature
+                            temperature=0.3
                         )
                         compressed_caption = generate_caption(
                             result['compressed_image'],
                             models['blip_processor'],
                             models['blip_model'],
-                            temperature=caption_temperature
+                            temperature=0.3
                         )
 
                         # Compute similarity
@@ -354,44 +339,33 @@ def main():
                     # Mark as processed
                     st.session_state.processed_files.add(uploaded_file.name)
 
-            st.divider()
+            # st.divider()
 
     # Embedding Comparison section
     if st.session_state.compressed_images:
-        st.header("2. Embedding & Semantic Comparison")
-        st.markdown("Compare embeddings and decoded captions from original vs compressed images.")
+        # st.header("2. Embedding & Semantic Comparison")
 
-        # Select image to analyze
-        selected_image_name = st.selectbox(
-            "Select image to view",
-            [img['name'] for img in st.session_state.compressed_images]
-        )
-
-        selected_image = next(
-            img for img in st.session_state.compressed_images
-            if img['name'] == selected_image_name
-        )
+        # Use most recent image
+        selected_image = st.session_state.compressed_images[-1]
+        selected_image_name = selected_image['name']
+        st.markdown(f"**Viewing:** {selected_image_name}")
 
         # Display results (auto-generated during upload)
         if selected_image_name in st.session_state.embeddings_cache:
             cached = st.session_state.embeddings_cache[selected_image_name]
 
-            # Display images side by side
+            # Display images side by side at same size
             col1, col2 = st.columns(2)
 
-            with col1:
-                st.subheader("Original Image")
-                st.image(selected_image['original'], use_container_width=True)
-                st.metric("Size", f"{selected_image['stats']['original_pixels']:,} pixels")
-                st.markdown("**Decoded Caption:**")
-                st.info(cached['original_caption'])
+            # with col1:
+            #     st.subheader("Original Image")
+            #     st.image(selected_image['original'], use_container_width=True)
+            #     st.metric("Size", f"{selected_image['stats']['original_pixels']:,} pixels")
 
-            with col2:
-                st.subheader("Compressed Image")
-                st.image(selected_image['compressed'], use_container_width=True)
-                st.metric("Size", f"{selected_image['stats']['compressed_pixels']:,} pixels")
-                st.markdown("**Decoded Caption:**")
-                st.info(cached['compressed_caption'])
+            # with col2:
+            #     st.subheader("Compressed Image")
+            #     st.image(selected_image['compressed'], use_container_width=True)
+            #     st.metric("Size", f"{selected_image['stats']['compressed_pixels']:,} pixels")
 
             # Embedding similarity
             st.divider()
@@ -404,20 +378,19 @@ def main():
                 st.metric("Original Embedding Dim", f"{cached['original_embedding'].shape[0]}")
             with col3:
                 st.metric("Compressed Embedding Dim", f"{cached['compressed_embedding'].shape[0]}")
+    
+        if st.session_state.compressed_images:
+            st.subheader("Statistics")
+            total_original = sum(img['stats']['original_pixels'] for img in st.session_state.compressed_images)
+            total_compressed = sum(img['stats']['compressed_pixels'] for img in st.session_state.compressed_images)
+            total_saved = total_original - total_compressed
 
-            # Interpretation
-            if cached['similarity'] > 0.95:
-                st.success("✓ **Excellent semantic preservation!** The compressed image maintains nearly identical semantic content.")
-            elif cached['similarity'] > 0.90:
-                st.success("✓ **Good semantic preservation.** The compressed image maintains strong semantic similarity.")
-            elif cached['similarity'] > 0.85:
-                st.warning("⚠ **Moderate semantic preservation.** Some semantic information may be lost.")
-            else:
-                st.error("✗ **Poor semantic preservation.** Significant semantic information lost during compression.")
+            col1, col2, col3 = st.columns(3)
+            col1.metric("Total Original Pixels", f"{total_original:,}")
+            col2.metric("Total Compressed Pixels", f"{total_compressed:,}")
+            col3.metric("Total Pixels Saved", f"{total_saved:,} ({100*total_saved/total_original:.1f}%)")
 
-            # Show embedding stats
             with st.expander("View Embedding Statistics"):
-                import torch
                 st.write("**Original Embedding Stats:**")
                 st.write(f"- Mean: {cached['original_embedding'].mean().item():.4f}")
                 st.write(f"- Std: {cached['original_embedding'].std().item():.4f}")
@@ -430,10 +403,10 @@ def main():
                 st.write(f"- Min: {cached['compressed_embedding'].min().item():.4f}")
                 st.write(f"- Max: {cached['compressed_embedding'].max().item():.4f}")
 
-    # Chat Interface section
+    st.divider()
+
     if st.session_state.compressed_images:
-        st.header("3. Dual Image Query Chat")
-        st.markdown("Ask questions about your images. Both original and compressed images will be queried simultaneously for comparison.")
+        st.header("Image Query Chat")
 
         # Load VQA model
         @st.cache_resource
@@ -445,24 +418,17 @@ def main():
 
         vqa_processor, vqa_model = load_vqa_model()
 
-        # Select image for chat
-        chat_image_name = st.selectbox(
-            "Select image to query",
-            [img['name'] for img in st.session_state.compressed_images],
-            key="chat_image_selector"
-        )
-
-        chat_image = next(
-            img for img in st.session_state.compressed_images
-            if img['name'] == chat_image_name
-        )
+        # Use most recent image
+        chat_image = st.session_state.compressed_images[-1]
+        chat_image_name = chat_image['name']
+        # st.markdown(f"**Querying:** {chat_image_name}")
 
         # Display both images
-        col1, col2 = st.columns(2)
-        with col1:
-            st.image(chat_image['original'], caption="Original Image", use_container_width=True)
-        with col2:
-            st.image(chat_image['compressed'], caption="Compressed Image", use_container_width=True)
+        # col1, col2 = st.columns(2)
+        # with col1:
+        #     st.image(chat_image['original'], caption="Original Image", use_container_width=True, width=400)
+        # with col2:
+        #     st.image(chat_image['compressed'], caption="Compressed Image", use_container_width=True, width=400)
 
         # Chat input
         question = st.text_input("Ask a question about the images:", key="chat_question")
@@ -507,25 +473,8 @@ def main():
                         st.markdown("**Compressed Answer:**")
                         st.info(chat['answer_compressed'])
 
-                    # Show match status
-                    if chat['answers_match']:
-                        st.success("✓ Identical answers - perfect semantic preservation!")
-                    else:
-                        st.warning(f"⚠ Different answers - check semantic similarity")
-
                     st.divider()
 
-    # Statistics
-    if st.session_state.compressed_images:
-        st.header("4. Statistics")
-        total_original = sum(img['stats']['original_pixels'] for img in st.session_state.compressed_images)
-        total_compressed = sum(img['stats']['compressed_pixels'] for img in st.session_state.compressed_images)
-        total_saved = total_original - total_compressed
-
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Original Pixels", f"{total_original:,}")
-        col2.metric("Total Compressed Pixels", f"{total_compressed:,}")
-        col3.metric("Total Pixels Saved", f"{total_saved:,} ({100*total_saved/total_original:.1f}%)")
 
 
 if __name__ == "__main__":
