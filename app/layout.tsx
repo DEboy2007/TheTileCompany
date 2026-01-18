@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Navigation from "@/components/Navigation";
 
 export const metadata: Metadata = {
-  title: "Dashboard Builder",
-  description: "Generate interactive dashboards with natural language",
+  title: "NexHacks Project",
+  description: "AI-powered analytics platform",
 };
 
 export default function RootLayout({
@@ -13,7 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <Navigation />
+        {children}
+      </body>
     </html>
   );
 }
