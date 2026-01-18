@@ -4,10 +4,11 @@ import { getProjectById, getProjectWithTags, updateProject, deleteProject, getPr
 // GET /api/projects/:id - Get project by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     const searchParams = request.nextUrl.searchParams;
     const withTags = searchParams.get('withTags') === 'true';
     const withStats = searchParams.get('withStats') === 'true';
@@ -40,10 +41,11 @@ export async function GET(
 // PATCH /api/projects/:id - Update project
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     const body = await request.json();
 
     const project = await updateProject(id, body);
@@ -66,10 +68,11 @@ export async function PATCH(
 // DELETE /api/projects/:id - Delete project
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
 
     await deleteProject(id);
 

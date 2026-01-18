@@ -28,7 +28,7 @@ export default function Home() {
                   Supercharge LLM performance by removing redundant pixels
                 </h1>
                 <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
-                  Reduce image tokens by up to 95% while preserving semantic information. Our intelligent pixel pruning technology identifies and removes irrelevant pixels, cutting inference costs and accelerating LLM performance.
+                  Remove just the lowest 20% of relevant pixels to achieve 34.3% token reduction while preserving complete semantic integrity. Our intelligent pixel pruning technology identifies and removes irrelevant pixels, cutting inference costs and accelerating LLM performance.
                 </p>
               </div>
             ) : (
@@ -46,16 +46,17 @@ export default function Home() {
                 </div>
                 <div className="grid grid-cols-3 gap-4 pt-4">
                   <div className="bg-white p-4 rounded-lg border border-gray-200">
-                    <p className="text-2xl font-bold text-[var(--color-dark)]">95%</p>
+                    <p className="text-2xl font-bold text-[var(--color-dark)]">34.3%</p>
                     <p className="text-sm text-gray-600">Token reduction</p>
+                    <p className="text-xs text-gray-500 mt-1">(20% pixels removed)</p>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border border-gray-200">
+                    <p className="text-2xl font-bold text-[var(--color-dark)]">100%</p>
+                    <p className="text-sm text-gray-600">Semantic integrity</p>
                   </div>
                   <div className="bg-white p-4 rounded-lg border border-gray-200">
                     <p className="text-2xl font-bold text-[var(--color-dark)]">0%</p>
                     <p className="text-sm text-gray-600">Quality loss</p>
-                  </div>
-                  <div className="bg-white p-4 rounded-lg border border-gray-200">
-                    <p className="text-2xl font-bold text-[var(--color-dark)]">10x</p>
-                    <p className="text-sm text-gray-600">Faster tokens</p>
                   </div>
                 </div>
               </div>
@@ -120,11 +121,11 @@ export default function Home() {
             Using the attention scores from the previous step, we compute an <span className="font-bold text-gray-800">importance threshold</span> that separates critical pixels from redundant ones. Any pixel scoring below this threshold is marked for removal.
           </p>
           <p>
-            We then construct a <span className="font-bold text-gray-800">pruning mask</span>—a precise binary map identifying every pixel marked for removal: background details, gradual transitions, and fine textures in non-critical regions. This mask ensures surgical precision, marking only pixels that genuinely don't contribute to LLM understanding before the final execution.
+            We then construct a <span className="font-bold text-gray-800">pruning mask</span>, a precise binary map identifying every pixel marked for removal: background details, gradual transitions, and fine textures in non-critical regions. This mask ensures surgical precision, marking only pixels that genuinely don't contribute to LLM understanding before the final execution.
           </p>
         </>
       ),
-      image: '@Image_Compression_Testing/Graphs/pruning_comparison.png',
+      image: '/pruning_comparison.png',
       imageAlt: 'Pruning comparison visualization showing masked pixels for removal',
     },
     {
@@ -137,11 +138,11 @@ export default function Home() {
             With the pruning mask in hand, we execute the final step: <span className="font-bold text-gray-800">content-aware pixel removal</span>. Using the mask as our guide, intelligent algorithms eliminate every marked pixel while maintaining structural coherence and avoiding artifacts at boundaries.
           </p>
           <p>
-            The result: a dramatically optimized image—often <span className="font-bold text-gray-800">95% smaller in token count</span>—with complete semantic integrity preserved. Every remaining pixel has been validated as essential by the attention model, delivering your LLM a perfectly distilled visual representation, free of noise.
+            The result is a dramatically optimized image with <span className="font-bold text-gray-800">34.3% token reduction</span> when removing the lowest 20% of pixels, with complete semantic integrity preserved. Every remaining pixel has been validated as essential by the attention model, delivering your LLM a perfectly distilled visual representation, free of noise.
           </p>
         </>
       ),
-      image: '@Image_Compression_Testing/Graphs/seam_carving_comparison.png',
+      image: '/seam_carving_comparison.png',
       imageAlt: 'Seam carving comparison showing content-aware pixel removal results',
     },
   ];

@@ -2,31 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
 
 export default function Navigation() {
   const pathname = usePathname();
-  const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      if (currentScrollY > lastScrollY && currentScrollY > 100) {
-        // Scrolling down
-        setIsVisible(false);
-      } else {
-        // Scrolling up
-        setIsVisible(true);
-      }
-
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
 
   const links = [
     { href: '/', label: 'Home' },
@@ -37,9 +15,8 @@ export default function Navigation() {
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-50 bg-[#FAF9F5] border-b border-gray-200 transition-transform duration-300"
+      className="fixed top-0 left-0 right-0 z-50 bg-[#FAF9F5] border-b border-gray-200"
       style={{
-        transform: isVisible ? 'translateY(0)' : 'translateY(-100%)',
         fontFamily: 'var(--font-mono)',
       }}
     >

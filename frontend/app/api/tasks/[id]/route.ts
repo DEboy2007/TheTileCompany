@@ -4,10 +4,11 @@ import { getTaskById, getTaskWithDetails, updateTask, deleteTask, completeTask }
 // GET /api/tasks/:id - Get task by ID
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     const searchParams = request.nextUrl.searchParams;
     const withDetails = searchParams.get('withDetails') === 'true';
 
@@ -31,10 +32,11 @@ export async function GET(
 // PATCH /api/tasks/:id - Update task
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
     const body = await request.json();
 
     const task = await updateTask(id, body);
@@ -57,10 +59,11 @@ export async function PATCH(
 // DELETE /api/tasks/:id - Delete task
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = parseInt(params.id);
+    const { id: idStr } = await params;
+    const id = parseInt(idStr);
 
     await deleteTask(id);
 
