@@ -1,6 +1,6 @@
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-screen bg-[#FAF9F5]">
       {/* Hero Section */}
       <section className="min-h-[80vh] flex items-center justify-center px-6 py-20">
         <div className="max-w-4xl mx-auto space-y-8">
@@ -42,7 +42,7 @@ export default function Home() {
       </section>
 
       {/* Features Section */}
-      <section className="bg-[var(--color-light-gray)] py-20 px-6">
+      <section className="bg-white py-20 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="mb-16 space-y-4">
             <p className="section-label">How It Works</p>
@@ -84,7 +84,7 @@ export default function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6">
+      <section className="bg-[#FAF9F5] py-20 px-6">
         <div className="max-w-3xl mx-auto text-center space-y-8">
           <h2 className="text-3xl md:text-4xl font-bold text-[var(--color-dark)]">
             Ready to optimize your image tokens?
@@ -99,7 +99,7 @@ export default function Home() {
       </section>
 
       {/* Navigation Links */}
-      <section className="border-t border-gray-200 py-12 px-6">
+      <section className="bg-white border-t border-gray-200 py-12 px-6">
         <div className="max-w-4xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
