@@ -2,13 +2,13 @@
 Image compression service - attention-guided seam carving.
 """
 
-import os
 import sys
+import os
 
-# Add Image_Compression_Testing to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'Image_Compression_Testing'))
+# Add parent directory to import compression_api
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from api import compress, image_to_base64
+from compression_api import compress, image_to_base64
 
 
 def compress_image(image_path_or_url, reduction=0.3, threshold=0.3):
