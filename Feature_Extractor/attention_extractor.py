@@ -204,7 +204,9 @@ def get_high_attention_regions(attention_map, threshold=0.5):
     return high_attn
 
 
-def create_pruned_image(img, attention_map, threshold=0.3, fill_color=(128, 128, 128)):
+DEFAULT_THRESHOLD = 0.3
+
+def create_pruned_image(img, attention_map, threshold=DEFAULT_THRESHOLD, fill_color=(128, 128, 128)):
     """Create a pruned image by masking low-attention regions"""
 
     img_array = np.array(img)
@@ -248,7 +250,7 @@ def compare_embeddings(emb1, emb2):
     return similarity
 
 
-def test_pruning_accuracy(model, original_img, attention_map, thresholds=[0.2, 0.3, 0.4, 0.5, 0.6, 0.7]):
+def test_pruning_accuracy(model, original_img, attention_map, thresholds=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6]):
     """Test how well the model recognizes pruned images at different thresholds"""
 
     print("\n" + "=" * 70)
