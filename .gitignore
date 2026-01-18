@@ -2,6 +2,7 @@
 nexhacks/
 data_raw/
 Image_Compression_Testing/images
+Image_Compression_Testing/output
 # dependencies
 /node_modules
 /.pnp

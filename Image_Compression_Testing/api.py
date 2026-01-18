@@ -15,7 +15,7 @@ from PIL import Image
 import base64
 
 # Constants
-DEFAULT_REDUCTION = 0.30
+DEFAULT_REDUCTION = 0.30  # 30% pixel reduction
 IMAGE_SIZE = 518
 PATCH_SIZE = 14
 
