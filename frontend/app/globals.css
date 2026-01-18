@@ -1,21 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800;900&family=Lora:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://cloud.typekit.net/wka8dks.css');
 
 @import "tailwindcss";
 
 :root {
-  --color-cream: #faf8f3;
-  --color-warm-orange: #f97316;
-  --color-deep-orange: #ea580c;
-  --color-accent-yellow: #fbbf24;
-  --color-dark: #1a1a1a;
-  --color-text: #2d2d2d;
-  --font-serif: 'Playfair Display', serif;
-  --font-body: 'Lora', serif;
+  --color-white: #ffffff;
+  --color-light-gray: #f5f5f5;
+  --color-dark: #000000;
+  --color-text: #333333;
+  --color-accent: #0066cc;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --font-serif: 'Tiempos Text Web', serif;
+  --font-body: 'Tiempos Text Web', serif;
 }
 
 @layer base {
   body {
-    @apply bg-[var(--color-cream)] text-[var(--color-text)];
+    @apply bg-[var(--color-white)] text-[var(--color-text)];
     font-family: var(--font-body);
   }
 
@@ -24,41 +25,41 @@
   }
 
   input[type="radio"] {
-    @apply accent-[var(--color-warm-orange)];
+    @apply accent-[var(--color-accent)];
   }
 
   textarea::placeholder,
   input::placeholder {
-    @apply text-gray-500;
+    @apply text-gray-400;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply px-6 py-3 rounded-lg bg-[var(--color-warm-orange)] hover:bg-[var(--color-deep-orange)] text-white font-semibold transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-6 py-3 bg-[var(--color-dark)] hover:bg-gray-800 text-white font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply px-6 py-3 rounded-lg bg-[var(--color-dark)] hover:bg-black text-white font-semibold transition-all duration-200;
+    @apply px-6 py-3 bg-[var(--color-light-gray)] hover:bg-gray-200 text-[var(--color-text)] font-semibold transition-all duration-200;
   }
 
   .btn-outline {
-    @apply px-6 py-3 rounded-lg border-2 border-[var(--color-warm-orange)] text-[var(--color-warm-orange)] hover:bg-[var(--color-warm-orange)] hover:text-white font-semibold transition-all duration-200;
+    @apply px-6 py-3 border border-[var(--color-dark)] text-[var(--color-dark)] hover:bg-[var(--color-dark)] hover:text-white font-semibold transition-all duration-200;
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-100 p-6;
+    @apply bg-[var(--color-white)] border border-gray-200 p-6;
   }
 
   .serif-display {
     font-family: var(--font-serif);
-    font-size: clamp(2.5rem, 8vw, 5rem);
-    font-weight: 800;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
+    font-size: clamp(2.5rem, 8vw, 4.5rem);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
   }
 
   .section-label {
-    @apply text-sm font-semibold tracking-widest uppercase text-[var(--color-warm-orange)];
+    @apply text-sm font-semibold tracking-wider uppercase text-gray-500;
   }
 }
