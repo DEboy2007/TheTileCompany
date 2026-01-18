@@ -1,9 +1,9 @@
 #!/opt/anaconda3/bin/python
 """
-Benchmark attention-guided seam carving compression on images in a folder.
+Benchmark attention-only seam carving compression (100% DINOv2 attention, no Sobel).
 
 Usage:
-    python benchmark.py --folder /path/to/images [--reduction 0.3] [--output Graphs]
+    python benchmark.py --folder /path/to/images [--reduction 0.3] [--output output]
 """
 
 import argparse

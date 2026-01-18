@@ -125,14 +125,14 @@ def compute_gradient_energy(img_array):
     return energy
 
 
-def compute_combined_energy(img_array, attention_map, gradient_weight=0.8):
+def compute_combined_energy(img_array, attention_map, gradient_weight=0.0):
     """
     Compute combined energy: gradient + attention.
 
     Args:
         img_array: Image as numpy array
         attention_map: Attention values (higher = more important)
-        gradient_weight: Weight for gradient energy (default 0.8 = 80% gradient, 20% attention)
+        gradient_weight: Weight for gradient energy (default 0.0 = 0% gradient, 100% attention)
 
     Returns:
         Combined energy map (lower = more likely to be removed)
@@ -140,8 +140,8 @@ def compute_combined_energy(img_array, attention_map, gradient_weight=0.8):
     # Gradient energy (edges have high energy, should be preserved)
     gradient_energy = compute_gradient_energy(img_array)
 
-    # Attention energy (invert: low attention = high energy = remove first)
-    attention_energy = 1.0 - attention_map
+    # Attention energy (high attention = high energy = preserve)
+    attention_energy = attention_map
 
     # Normalize attention energy
     attention_energy = (attention_energy - attention_energy.min()) / (attention_energy.max() - attention_energy.min() + 1e-8)
@@ -203,7 +203,7 @@ def remove_horizontal_seam(img_array, seam):
     return np.transpose(remove_vertical_seam(np.transpose(img_array, (1, 0, 2)) if img_array.ndim == 3 else img_array.T, seam), (1, 0, 2) if img_array.ndim == 3 else (1, 0))
 
 
-def seam_carve_image(img, attention_map, target_reduction, gradient_weight=0.8):
+def seam_carve_image(img, attention_map, target_reduction, gradient_weight=0.0):
     """
     Perform seam carving to reduce image size.
     Uses combined energy: gradient (edges) + attention.
@@ -212,7 +212,7 @@ def seam_carve_image(img, attention_map, target_reduction, gradient_weight=0.8):
         img: PIL Image
         attention_map: Attention values from DINOv2
         target_reduction: Target pixel reduction (0-1)
-        gradient_weight: Weight for gradient energy (0.8 = 80% gradient, 20% attention)
+        gradient_weight: Weight for gradient energy (0.0 = 0% gradient, 100% attention)
     """
     img_array = np.array(img)
     h, w = img_array.shape[:2]
