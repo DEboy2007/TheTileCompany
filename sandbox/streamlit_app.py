@@ -64,17 +64,17 @@ def compress_image_api(image_bytes, reduction=0.3, threshold=0.3):
                 'from_cache': True
             }
 
-    # Save image temporarily
+    # Save image temporarily with absolute path
     temp_path = CACHE_DIR / f"temp_{image_hash}.png"
     with open(temp_path, 'wb') as f:
         f.write(image_bytes)
 
     try:
-        # Call API
+        # Call API with absolute path
         response = requests.post(
             f"{BACKEND_URL}/compress",
             json={
-                "image": str(temp_path),
+                "image": str(temp_path.absolute()),
                 "reduction": reduction,
                 "threshold": threshold
             },
@@ -124,27 +124,60 @@ def image_to_bytes(image):
 
 
 @st.cache_resource
-def load_vision_model():
-    """Load Vision-Language model for chatbot."""
-    from transformers import BlipProcessor, BlipForQuestionAnswering
+def load_vision_models():
+    """Load Vision models for embedding and captioning."""
+    from transformers import BlipProcessor, BlipForConditionalGeneration, ViTModel, ViTImageProcessor
 
-    processor = BlipProcessor.from_pretrained("Salesforce/blip-vqa-base")
-    model = BlipForQuestionAnswering.from_pretrained("Salesforce/blip-vqa-base")
+    # Load BLIP for captioning (decoding)
+    blip_processor = BlipProcessor.from_pretrained("Salesforce/blip-image-captioning-base")
+    blip_model = BlipForConditionalGeneration.from_pretrained("Salesforce/blip-image-captioning-base")
 
-    return processor, model
+    # Load ViT for embeddings
+    vit_processor = ViTImageProcessor.from_pretrained('google/vit-base-patch16-224-in21k')
+    vit_model = ViTModel.from_pretrained('google/vit-base-patch16-224-in21k')
+
+    return {
+        'blip_processor': blip_processor,
+        'blip_model': blip_model,
+        'vit_processor': vit_processor,
+        'vit_model': vit_model
+    }
 
 
-def query_image(image, question, processor, model):
-    """Query an image using the vision-language model."""
+def generate_embedding(image, vit_processor, vit_model):
+    """Generate embedding from image using ViT."""
     import torch
 
-    inputs = processor(image, question, return_tensors="pt")
+    inputs = vit_processor(images=image, return_tensors="pt")
 
     with torch.no_grad():
-        outputs = model.generate(**inputs)
+        outputs = vit_model(**inputs)
+        # Use [CLS] token embedding
+        embedding = outputs.last_hidden_state[:, 0, :].squeeze()
 
-    answer = processor.decode(outputs[0], skip_special_tokens=True)
-    return answer
+    return embedding
+
+
+def generate_caption(image, blip_processor, blip_model):
+    """Generate caption from image using BLIP."""
+    import torch
+
+    inputs = blip_processor(images=image, return_tensors="pt")
+
+    with torch.no_grad():
+        outputs = blip_model.generate(**inputs, max_length=50)
+
+    caption = blip_processor.decode(outputs[0], skip_special_tokens=True)
+    return caption
+
+
+def compute_embedding_similarity(emb1, emb2):
+    """Compute cosine similarity between two embeddings."""
+    import torch
+    import torch.nn.functional as F
+
+    similarity = F.cosine_similarity(emb1.unsqueeze(0), emb2.unsqueeze(0))
+    return similarity.item()
 
 
 def main():
@@ -201,8 +234,8 @@ def main():
     # Initialize session state
     if 'compressed_images' not in st.session_state:
         st.session_state.compressed_images = []
-    if 'chat_history' not in st.session_state:
-        st.session_state.chat_history = []
+    if 'embeddings_cache' not in st.session_state:
+        st.session_state.embeddings_cache = {}
 
     # Image upload section
     st.header("1. Upload Images")
@@ -251,18 +284,18 @@ def main():
 
             st.divider()
 
-    # Chatbot section
+    # Embedding Comparison section
     if st.session_state.compressed_images:
-        st.header("2. Vision Chatbot")
-        st.markdown("Ask questions about your compressed images!")
+        st.header("2. Embedding & Semantic Comparison")
+        st.markdown("Compare embeddings and decoded captions from original vs compressed images to demonstrate compression effectiveness.")
 
-        # Load vision model
-        with st.spinner("Loading vision model..."):
-            processor, model = load_vision_model()
+        # Load vision models
+        with st.spinner("Loading vision models (ViT + BLIP)..."):
+            models = load_vision_models()
 
-        # Select image to query
+        # Select image to analyze
         selected_image_name = st.selectbox(
-            "Select image to query",
+            "Select image to analyze",
             [img['name'] for img in st.session_state.compressed_images]
         )
 
@@ -271,38 +304,102 @@ def main():
             if img['name'] == selected_image_name
         )
 
-        col1, col2 = st.columns([1, 2])
+        # Generate embeddings and captions button
+        if st.button("Generate Embeddings & Captions", key="generate_embeddings"):
+            with st.spinner("Generating embeddings and captions..."):
+                # Generate embeddings
+                original_embedding = generate_embedding(
+                    selected_image['original'],
+                    models['vit_processor'],
+                    models['vit_model']
+                )
+                compressed_embedding = generate_embedding(
+                    selected_image['compressed'],
+                    models['vit_processor'],
+                    models['vit_model']
+                )
 
-        with col1:
-            st.image(selected_image['compressed'], caption="Selected Image", use_container_width=True)
+                # Generate captions (decode embeddings)
+                original_caption = generate_caption(
+                    selected_image['original'],
+                    models['blip_processor'],
+                    models['blip_model']
+                )
+                compressed_caption = generate_caption(
+                    selected_image['compressed'],
+                    models['blip_processor'],
+                    models['blip_model']
+                )
 
-        with col2:
-            # Chat interface
-            question = st.text_input("Ask a question about this image:", key="question_input")
+                # Compute similarity
+                similarity = compute_embedding_similarity(original_embedding, compressed_embedding)
 
-            if st.button("Ask") and question:
-                with st.spinner("Thinking..."):
-                    answer = query_image(
-                        selected_image['compressed'],
-                        question,
-                        processor,
-                        model
-                    )
+                # Store in session state
+                st.session_state.embeddings_cache[selected_image_name] = {
+                    'original_embedding': original_embedding,
+                    'compressed_embedding': compressed_embedding,
+                    'original_caption': original_caption,
+                    'compressed_caption': compressed_caption,
+                    'similarity': similarity
+                }
 
-                    st.session_state.chat_history.append({
-                        'image': selected_image_name,
-                        'question': question,
-                        'answer': answer
-                    })
+        # Display results if available
+        if selected_image_name in st.session_state.embeddings_cache:
+            cached = st.session_state.embeddings_cache[selected_image_name]
 
-            # Display chat history
-            if st.session_state.chat_history:
-                st.subheader("Chat History")
-                for i, chat in enumerate(reversed(st.session_state.chat_history[-10:])):
-                    with st.container():
-                        st.markdown(f"**Q ({chat['image']}):** {chat['question']}")
-                        st.markdown(f"**A:** {chat['answer']}")
-                        st.divider()
+            # Display images side by side
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.subheader("Original Image")
+                st.image(selected_image['original'], use_container_width=True)
+                st.metric("Size", f"{selected_image['stats']['original_pixels']:,} pixels")
+                st.markdown("**Decoded Caption:**")
+                st.info(cached['original_caption'])
+
+            with col2:
+                st.subheader("Compressed Image")
+                st.image(selected_image['compressed'], use_container_width=True)
+                st.metric("Size", f"{selected_image['stats']['compressed_pixels']:,} pixels")
+                st.markdown("**Decoded Caption:**")
+                st.info(cached['compressed_caption'])
+
+            # Embedding similarity
+            st.divider()
+            st.subheader("Embedding Analysis")
+
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Embedding Similarity", f"{cached['similarity']:.4f}")
+            with col2:
+                st.metric("Original Embedding Dim", f"{cached['original_embedding'].shape[0]}")
+            with col3:
+                st.metric("Compressed Embedding Dim", f"{cached['compressed_embedding'].shape[0]}")
+
+            # Interpretation
+            if cached['similarity'] > 0.95:
+                st.success("✓ **Excellent semantic preservation!** The compressed image maintains nearly identical semantic content.")
+            elif cached['similarity'] > 0.90:
+                st.success("✓ **Good semantic preservation.** The compressed image maintains strong semantic similarity.")
+            elif cached['similarity'] > 0.85:
+                st.warning("⚠ **Moderate semantic preservation.** Some semantic information may be lost.")
+            else:
+                st.error("✗ **Poor semantic preservation.** Significant semantic information lost during compression.")
+
+            # Show embedding stats
+            with st.expander("View Embedding Statistics"):
+                import torch
+                st.write("**Original Embedding Stats:**")
+                st.write(f"- Mean: {cached['original_embedding'].mean().item():.4f}")
+                st.write(f"- Std: {cached['original_embedding'].std().item():.4f}")
+                st.write(f"- Min: {cached['original_embedding'].min().item():.4f}")
+                st.write(f"- Max: {cached['original_embedding'].max().item():.4f}")
+
+                st.write("\n**Compressed Embedding Stats:**")
+                st.write(f"- Mean: {cached['compressed_embedding'].mean().item():.4f}")
+                st.write(f"- Std: {cached['compressed_embedding'].std().item():.4f}")
+                st.write(f"- Min: {cached['compressed_embedding'].min().item():.4f}")
+                st.write(f"- Max: {cached['compressed_embedding'].max().item():.4f}")
 
     # Statistics
     if st.session_state.compressed_images:
