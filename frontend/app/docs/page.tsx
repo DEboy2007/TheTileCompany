@@ -48,71 +48,128 @@ export default function Docs() {
       content: (
         <div className="space-y-6">
           <div>
-            <h2 className="text-2xl font-mono font-semibold text-[var(--color-dark)] mb-4">Endpoint</h2>
-            <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-4 py-3 overflow-x-auto">
-              <span className="text-xs font-mono font-semibold bg-green-700 text-white px-2 py-1 rounded whitespace-nowrap">POST</span>
-              <code className="text-sm font-mono text-[var(--color-dark)]">https://api.thetokencompany.com/v1/compress</code>
+            <h2 className="text-2xl font-mono font-semibold text-[var(--color-dark)] mb-4">Endpoints</h2>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-4 py-3 overflow-x-auto">
+                <span className="text-xs font-mono font-semibold bg-blue-600 text-white px-2 py-1 rounded whitespace-nowrap">GET</span>
+                <code className="text-sm font-mono text-[var(--color-dark)]">http://localhost:5000/health</code>
+              </div>
+              <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-4 py-3 overflow-x-auto">
+                <span className="text-xs font-mono font-semibold bg-green-700 text-white px-2 py-1 rounded whitespace-nowrap">POST</span>
+                <code className="text-sm font-mono text-[var(--color-dark)]">http://localhost:5000/compress</code>
+              </div>
             </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-4">Authentication</h3>
+            <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-4">Health Check</h3>
             <p className="text-gray-600 mb-4">
-              All API requests require authentication using your API key. Include the key in the header:
+              Check if the compression API is healthy and running.
             </p>
-            <CodeBlock
-              code={`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  https://api.thetilecompany.com/compress`}
-              language="bash"
-              filename="auth.sh"
-            />
+            <div className="space-y-3 mb-4">
+              <div>
+                <p className="text-gray-600 text-sm font-medium mb-2">Response:</p>
+                <CodeBlock
+                  code={`{
+  "status": "healthy",
+  "service": "tile-api",
+  "version": "1.0.0"
+}`}
+                  language="json"
+                  filename="health.json"
+                />
+              </div>
+            </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-4">Image Compression Endpoint</h3>
+            <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-4">Compression Request</h3>
             <p className="text-gray-600 mb-4">
-              POST /compress - Compress an image using attention map-based pruning
+              Compress an image using DINOv2 attention-guided seam carving. Images are automatically resized to 518×518 pixels for processing.
             </p>
             <div className="space-y-3 mb-4">
               <div>
                 <p className="text-gray-600 text-sm font-medium mb-2">Request:</p>
                 <CodeBlock
                   code={`{
-  "image": "path/to/image.jpg",
-  "threshold": 0.3,
-  "output_format": "jpg"
+  "image": "https://example.com/image.jpg",
+  "reduction": 0.3,
+  "threshold": 0.3
 }`}
                   language="json"
                   filename="request.json"
                 />
               </div>
               <div>
-                <p className="text-gray-600 text-sm font-medium mb-2">Response:</p>
+                <p className="text-gray-600 text-sm font-medium mb-2">Success Response (status: 0):</p>
                 <CodeBlock
                   code={`{
-  "status": "success",
-  "original_size": 2048000,
-  "compressed_size": 102400,
-  "compression_ratio": 0.95,
-  "output_path": "compressed.jpg"
+  "status": 0,
+  "reduction_pct": 30.5,
+  "gray_overlay_base64": "iVBORw0KGgoAAAANS...",
+  "compressed_image_base64": "iVBORw0KGgoAAAANS...",
+  "stats": {
+    "original_size": [640, 480],
+    "compressed_size": [445, 333],
+    "original_pixels": 307200,
+    "compressed_pixels": 148185,
+    "pixels_saved": 159015
+  }
 }`}
                   language="json"
                   filename="response.json"
+                />
+              </div>
+              <div>
+                <p className="text-gray-600 text-sm font-medium mb-2">Error Response (status: 1):</p>
+                <CodeBlock
+                  code={`{
+  "status": 1,
+  "message": "Error description"
+}`}
+                  language="json"
+                  filename="error.json"
                 />
               </div>
             </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-4">Parameters</h3>
+            <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-4">Request Parameters</h3>
             <div className="space-y-3">
               <div className="border-l-4 border-[var(--color-dark)] pl-4 bg-white py-2">
-                <h4 className="font-mono font-medium text-[var(--color-dark)]">threshold (float)</h4>
-                <p className="text-gray-600 text-sm">Controls compression aggressiveness. Range: 0.0-1.0. Higher values = more compression.</p>
+                <h4 className="font-mono font-medium text-[var(--color-dark)]">image (string, required)</h4>
+                <p className="text-gray-600 text-sm">URL or local file path to the image to compress.</p>
               </div>
               <div className="border-l-4 border-[var(--color-dark)] pl-4 bg-white py-2">
-                <h4 className="font-medium text-[var(--color-dark)]">output_format (string)</h4>
-                <p className="text-gray-600 text-sm">Output image format. Supports: jpg, png, webp</p>
+                <h4 className="font-mono font-medium text-[var(--color-dark)]">reduction (float, optional)</h4>
+                <p className="text-gray-600 text-sm">Target reduction factor (0.0-1.0). Default: 0.3. Higher values = more aggressive compression.</p>
+              </div>
+              <div className="border-l-4 border-[var(--color-dark)] pl-4 bg-white py-2">
+                <h4 className="font-mono font-medium text-[var(--color-dark)]">threshold (float, optional)</h4>
+                <p className="text-gray-600 text-sm">Attention threshold (0.0-1.0). Default: 0.3. Controls which pixels are considered important.</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-4">Response Fields</h3>
+            <div className="space-y-3">
+              <div className="border-l-4 border-[var(--color-dark)] pl-4 bg-white py-2">
+                <h4 className="font-mono font-medium text-[var(--color-dark)]">status (integer)</h4>
+                <p className="text-gray-600 text-sm">0 for success, 1 for error</p>
+              </div>
+              <div className="border-l-4 border-[var(--color-dark)] pl-4 bg-white py-2">
+                <h4 className="font-mono font-medium text-[var(--color-dark)]">gray_overlay_base64 (string)</h4>
+                <p className="text-gray-600 text-sm">Base64 encoded attention visualization overlay (shows low-attention areas)</p>
+              </div>
+              <div className="border-l-4 border-[var(--color-dark)] pl-4 bg-white py-2">
+                <h4 className="font-mono font-medium text-[var(--color-dark)]">compressed_image_base64 (string)</h4>
+                <p className="text-gray-600 text-sm">Base64 encoded compressed image in PNG format</p>
+              </div>
+              <div className="border-l-4 border-[var(--color-dark)] pl-4 bg-white py-2">
+                <h4 className="font-mono font-medium text-[var(--color-dark)]">stats (object)</h4>
+                <p className="text-gray-600 text-sm">Compression statistics including original/compressed sizes, pixel counts, and pixels saved</p>
               </div>
             </div>
           </div>
@@ -126,9 +183,9 @@ export default function Docs() {
         <div className="space-y-6">
           <div>
             <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-4">Installation</h3>
-            <p className="text-gray-600 mb-4">Install the TheTileCompany Python SDK via pip:</p>
+            <p className="text-gray-600 mb-4">Install the Tile Python SDK via pip:</p>
             <CodeBlock
-              code={`pip install tile-client`}
+              code={`pip install tile-sdk`}
               language="bash"
               filename="terminal"
             />
@@ -138,20 +195,36 @@ export default function Docs() {
             <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-4">Quick Start</h3>
             <p className="text-gray-600 mb-4">Get up and running in minutes:</p>
             <CodeBlock
-              code={`from tile_client import TileClient
+              code={`from python_sdk import TileClient
+import base64
 
-# Initialize client
-client = TileClient(api_key="YOUR_API_KEY")
+# Initialize client (default: http://localhost:5000)
+client = TileClient()
 
-# Compress an image
-result = client.compress_image(
-    input_path="original.jpg",
-    output_path="compressed.jpg",
-    threshold=0.3
-)
+try:
+    # Compress an image
+    result = client.compress_image(
+        image_path="https://example.com/image.jpg",
+        reduction=0.3,
+        threshold=0.3
+    )
 
-print(f"Compression ratio: {result.compression_ratio:.2%}")
-print(f"Size reduction: {result.original_size - result.compressed_size} bytes")`}
+    # Decode base64 responses
+    compressed_data = base64.b64decode(result['compressed_image_base64'])
+    overlay_data = base64.b64decode(result['gray_overlay_base64'])
+
+    # Save compressed image
+    with open('compressed.png', 'wb') as f:
+        f.write(compressed_data)
+
+    # Print statistics
+    stats = result['stats']
+    print(f"Original: {stats['original_size']}")
+    print(f"Compressed: {stats['compressed_size']}")
+    print(f"Pixels saved: {stats['pixels_saved']}")
+
+finally:
+    client.close()`}
               language="python"
               filename="quickstart.py"
             />
@@ -161,34 +234,37 @@ print(f"Size reduction: {result.original_size - result.compressed_size} bytes")`
             <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-4">Configuration</h3>
             <div className="space-y-3">
               <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                <h4 className="font-mono font-medium text-[var(--color-dark)] mb-2">Base URL</h4>
+                <p className="text-gray-600 text-sm">Default: http://localhost:5000. Set custom server with TileClient(base_url="...")</p>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4 bg-white">
+                <h4 className="font-mono font-medium text-[var(--color-dark)] mb-2">Timeout</h4>
+                <p className="text-gray-600 text-sm">Default: 30 seconds. Configure with TileClient(timeout=60)</p>
+              </div>
+              <div className="border border-gray-200 rounded-lg p-4 bg-white">
                 <h4 className="font-mono font-medium text-[var(--color-dark)] mb-2">Reduction Factor (0 - 1.0)</h4>
-                <p className="text-gray-600 text-sm">Controls how aggressive the pruning is. Higher values = more compression with lower quality loss.</p>
-              </div>
-              <div className="border border-gray-200 rounded-lg p-4 bg-white">
-                <h4 className="font-mono font-medium text-[var(--color-dark)] mb-2">Output Format</h4>
-                <p className="text-gray-600 text-sm">Choose between jpg, png, or webp. WebP offers best quality at size ratio.</p>
-              </div>
-              <div className="border border-gray-200 rounded-lg p-4 bg-white">
-                <h4 className="font-mono font-medium text-[var(--color-dark)] mb-2">Batch Processing</h4>
-                <p className="text-gray-600 text-sm">Process multiple images efficiently with batch mode for improved throughput.</p>
+                <p className="text-gray-600 text-sm">Controls compression aggressiveness. Default: 0.3. Higher values = more aggressive seam removal.</p>
               </div>
             </div>
           </div>
 
           <div>
-            <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-4">Advanced Usage</h3>
+            <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-4">Error Handling</h3>
             <CodeBlock
-              code={`# Batch compression
-images = ["img1.jpg", "img2.jpg", "img3.jpg"]
-results = client.batch_compress(images, threshold=0.3)
+              code={`from tile_client import TileClient, TileClientError, TileAPIError
 
-# Custom callbacks
-def on_complete(result):
-    print(f"Compressed {result.filename}")
+client = TileClient()
 
-client.compress_with_callback("image.jpg", on_complete)`}
+try:
+    result = client.compress_image("image.jpg")
+except TileAPIError as e:
+    print(f"API Error: {e}")
+except TileConnectionError as e:
+    print(f"Connection Error: {e}")
+except TileClientError as e:
+    print(f"Client Error: {e}")`}
               language="python"
-              filename="advanced.py"
+              filename="error_handling.py"
             />
           </div>
         </div>
@@ -234,18 +310,7 @@ client.compress_with_callback("image.jpg", on_complete)`}
             </a>
           </div>
 
-          <div className="border border-gray-200 rounded-lg p-6 bg-white hover:border-gray-300 transition-colors">
-            <h3 className="text-lg font-mono font-semibold text-[var(--color-dark)] mb-2">Support & Community</h3>
-            <p className="text-gray-600 text-sm mb-4">
-              Join our community, ask questions, and share your projects. Get help from our team and other developers using TheTileCompany.
-            </p>
-            <a
-              href="#"
-              className="inline-flex items-center text-[var(--color-dark)] hover:text-gray-600 transition-colors"
-            >
-              Join Discord →
-            </a>
-          </div>
+          
         </div>
       )
     }

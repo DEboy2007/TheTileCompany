@@ -5,19 +5,15 @@ import { Light as SyntaxHighlighter } from 'react-syntax-highlighter';
 import json from 'react-syntax-highlighter/dist/esm/languages/hljs/json';
 import python from 'react-syntax-highlighter/dist/esm/languages/hljs/python';
 import bash from 'react-syntax-highlighter/dist/esm/languages/hljs/bash';
+import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs';
 
 SyntaxHighlighter.registerLanguage('json', json);
 SyntaxHighlighter.registerLanguage('python', python);
 SyntaxHighlighter.registerLanguage('bash', bash);
 
-// Custom theme with cyan, pink, blue, orange, purple color scheme
+// Custom theme override for atomOneDark with cyan, pink, blue, orange, purple accents
 const customTheme: { [key: string]: CSSProperties } = {
-  hljs: {
-    display: 'block',
-    overflowX: 'auto',
-    color: '#ffffff',
-    background: '#0a0a0a',
-  },
+  ...atomOneDark,
   'hljs-string': {
     color: '#ec4899', // pink-400
   },
@@ -33,35 +29,8 @@ const customTheme: { [key: string]: CSSProperties } = {
   'hljs-property': {
     color: '#60a5fa', // blue-300
   },
-  'hljs-keyword': {
-    color: '#ffffff', // white
-  },
-  'hljs-title': {
-    color: '#ffffff', // white
-  },
-  'hljs-built_in': {
-    color: '#ffffff', // white
-  },
-  'hljs-selector-tag': {
-    color: '#ffffff', // white
-  },
-  'hljs-name': {
-    color: '#ffffff', // white
-  },
-  'hljs-variable': {
-    color: '#ffffff', // white
-  },
-  'hljs-operator': {
-    color: '#ffffff', // white
-  },
-  'hljs-punctuation': {
-    color: '#f472b6', // pink-400
-  },
-  'hljs-quote': {
-    color: '#ec4899', // pink-300
-  },
   'hljs-meta': {
-    color: '#22d3ee', // cyan-300
+    color: '#22d3ee', // cyan-300 (bash flags, decorators)
   },
   'hljs-params': {
     color: '#22d3ee', // cyan-300 (for command flags)
@@ -69,29 +38,8 @@ const customTheme: { [key: string]: CSSProperties } = {
   'hljs-doctag': {
     color: '#60a5fa', // blue-300
   },
-  'hljs-code': {
-    color: '#ffffff', // white
-  },
-  'hljs-section': {
-    color: '#ffffff', // white
-  },
   'hljs-link': {
     color: '#ec4899', // pink-400 (for URLs)
-  },
-  'hljs-type': {
-    color: '#ffffff', // white
-  },
-  'hljs-subst': {
-    color: '#ffffff', // white
-  },
-  'hljs-addition': {
-    color: '#ffffff', // white
-  },
-  'hljs-deletion': {
-    color: '#ffffff', // white
-  },
-  'hljs-tag': {
-    color: '#ffffff', // white
   },
   'hljs-regexp': {
     color: '#ec4899', // pink-400
@@ -99,26 +47,11 @@ const customTheme: { [key: string]: CSSProperties } = {
   'hljs-symbol': {
     color: '#a78bfa', // purple-400
   },
-  'hljs-comment': {
-    color: '#6b7280', // gray-500 (keep gray, not colored)
+  'hljs-template-variable': {
+    color: '#ec4899', // pink-400 (f-string variables)
   },
-  'hljs-class': {
-    color: '#ffffff', // white
-  },
-  'hljs-function': {
-    color: '#ffffff', // white
-  },
-  'hljs-literal-string': {
-    color: '#ec4899', // pink-400
-  },
-  'hljs-bash': {
-    color: '#ffffff', // white
-  },
-  'hljs-literal-string-literal': {
-    color: '#ec4899', // pink-400
-  },
-  'language-bash': {
-    color: '#ffffff', // white
+  'hljs-decorator': {
+    color: '#22d3ee', // cyan-300 (@ decorators)
   },
 };
 
@@ -138,9 +71,9 @@ export default function CodeBlock({ code, language = 'json', filename = 'code' }
   };
 
   return (
-    <div className="bg-[#0a0a0a] rounded-lg overflow-hidden border border-gray-700">
+    <div className="bg-[#282c34] rounded-lg overflow-hidden border border-gray-700">
       {/* Mac-style header */}
-      <div className="bg-[#1a1a1a] px-4 py-3 flex items-center justify-between border-b border-gray-700">
+      <div className="bg-[#21252b] px-4 py-3 flex items-center justify-between border-b border-gray-700">
         <div className="flex items-center gap-3">
           {/* Traffic lights */}
           <div className="flex gap-2">
@@ -183,7 +116,7 @@ export default function CodeBlock({ code, language = 'json', filename = 'code' }
           fontSize: '0.875rem',
           lineHeight: '1.5',
           fontFamily: 'IBM Plex Mono, monospace',
-          background: '#0a0a0a',
+          background: '#282c34',
         }}
         showLineNumbers={false}
       >
