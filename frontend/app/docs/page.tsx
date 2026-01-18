@@ -33,7 +33,7 @@ export default function Docs() {
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">Documentation</h1>
               <p className="text-gray-600">
-                Complete guide to using NexHacks for performance analysis and benchmarking.
+                Compress images through attention maps for optimized LLM inference. Reduce token usage, lower costs, and speed up your AI applications.
               </p>
             </div>
 
