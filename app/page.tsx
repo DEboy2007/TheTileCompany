@@ -1,92 +1,54 @@
-'use client';
-
-import { useState } from 'react';
-import DatabaseModal from '@/components/DatabaseModal';
-
 export default function Home() {
-  const [prompt, setPrompt] = useState('');
-  const [mode, setMode] = useState<'dashboard' | 'interpret'>('dashboard');
-  const [showDatabaseModal, setShowDatabaseModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!prompt.trim()) return;
-
-    setIsSubmitting(true);
-    try {
-      // TODO: Add API call to handle prompt submission
-      console.log({
-        prompt,
-        mode,
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
-    <main className="min-h-screen bg-gradient-to-br from-amber-50 via-white to-orange-50 p-6 flex items-center justify-center">
-      <div className="w-full max-w-2xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Dashboard Builder</h1>
-          <p className="text-gray-600">Generate interactive dashboards with natural language</p>
+    <main className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      <div className="max-w-7xl mx-auto px-6 py-20">
+        <div className="space-y-6">
+          <h1 className="text-5xl font-bold text-gray-900">Welcome to NexHacks</h1>
+          <p className="text-xl text-gray-600 max-w-2xl">
+            An AI-powered analytics platform for benchmarking, documentation, and real-time analysis.
+          </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-            <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-3">
-              Prompt
-            </label>
-            <textarea
-              id="prompt"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Describe the dashboard you want to create..."
-              className="w-full px-4 py-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-colors resize-none"
-              rows={6}
-            />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Benchmark</h2>
+            <p className="text-gray-600 text-sm mb-4">
+              Compare performance metrics and analyze system behavior.
+            </p>
+            <a href="/benchmark" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+              Explore →
+            </a>
           </div>
 
-          <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-            <label className="block text-sm font-medium text-gray-700 mb-4">Mode</label>
-            <div className="flex gap-4">
-              {(['dashboard', 'interpret'] as const).map((option) => (
-                <label key={option} className="flex items-center cursor-pointer">
-                  <input
-                    type="radio"
-                    name="mode"
-                    value={option}
-                    checked={mode === option}
-                    onChange={(e) => setMode(e.target.value as typeof mode)}
-                    className="w-4 h-4 text-amber-600 bg-gray-100 border-gray-300 focus:ring-amber-500 cursor-pointer"
-                  />
-                  <span className="ml-3 text-gray-700 capitalize font-medium">{option}</span>
-                </label>
-              ))}
-            </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Docs</h2>
+            <p className="text-gray-600 text-sm mb-4">
+              Read comprehensive documentation and guides.
+            </p>
+            <a href="/docs" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+              Learn →
+            </a>
           </div>
 
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => setShowDatabaseModal(true)}
-              className="flex-1 px-4 py-3 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium transition-colors border border-gray-200"
-            >
-              Connect Database
-            </button>
-            <button
-              type="submit"
-              disabled={!prompt.trim() || isSubmitting}
-              className="flex-1 px-4 py-3 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:bg-gray-300 text-white font-medium transition-colors shadow-sm disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? 'Generating...' : 'Generate'}
-            </button>
+          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Console</h2>
+            <p className="text-gray-600 text-sm mb-4">
+              Access the interactive console for real-time analysis.
+            </p>
+            <a href="/console" className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+              Open →
+            </a>
           </div>
-        </form>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Home</h2>
+            <p className="text-gray-600 text-sm mb-4">
+              Start your journey with NexHacks today.
+            </p>
+            <span className="text-gray-400 text-sm">You are here</span>
+          </div>
+        </div>
       </div>
-
-      <DatabaseModal open={showDatabaseModal} onOpenChange={setShowDatabaseModal} />
     </main>
   );
 }
