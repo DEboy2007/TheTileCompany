@@ -15,6 +15,15 @@
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
+  }
+
   body {
     @apply bg-[#FAF9F5] text-[var(--color-text)];
     font-family: var(--font-body);
@@ -22,6 +31,13 @@
 
   main {
     @apply pt-16;
+    overflow-y: scroll;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  main::-webkit-scrollbar {
+    display: none;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -38,7 +54,22 @@
   }
 }
 
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @layer components {
+  .snap-section {
+    /* Sections marked for snappy scroll behavior */
+  }
+
   .btn-primary {
     @apply px-6 py-3 bg-[var(--color-dark)] hover:bg-gray-800 text-white font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
   }
