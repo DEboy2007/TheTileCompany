@@ -15,7 +15,7 @@ from PIL import Image
 import base64
 
 # Constants
-DEFAULT_REDUCTION = 0.30
+DEFAULT_REDUCTION = 0.30  # 30% pixel reduction
 IMAGE_SIZE = 518
 PATCH_SIZE = 14
 
@@ -102,6 +102,57 @@ def create_gray_overlay(img, attention_map, threshold=0.3):
     return Image.fromarray(result.astype(np.uint8))
 
 
+def compute_gradient_energy(img_array):
+    """Compute gradient-based energy using Sobel filters"""
+    from scipy.ndimage import sobel
+
+    # Convert to grayscale if needed
+    if img_array.ndim == 3:
+        gray = np.mean(img_array, axis=2)
+    else:
+        gray = img_array.astype(np.float64)
+
+    # Compute gradients
+    dx = sobel(gray, axis=1)
+    dy = sobel(gray, axis=0)
+
+    # Energy is magnitude of gradient
+    energy = np.sqrt(dx**2 + dy**2)
+
+    # Normalize to 0-1
+    energy = (energy - energy.min()) / (energy.max() - energy.min() + 1e-8)
+
+    return energy
+
+
+def compute_combined_energy(img_array, attention_map, gradient_weight=0.0):
+    """
+    Compute combined energy: gradient + attention.
+
+    Args:
+        img_array: Image as numpy array
+        attention_map: Attention values (higher = more important)
+        gradient_weight: Weight for gradient energy (default 0.0 = 0% gradient, 100% attention)
+
+    Returns:
+        Combined energy map (lower = more likely to be removed)
+    """
+    # Gradient energy (edges have high energy, should be preserved)
+    gradient_energy = compute_gradient_energy(img_array)
+
+    # Attention energy (high attention = high energy = preserve)
+    attention_energy = attention_map
+
+    # Normalize attention energy
+    attention_energy = (attention_energy - attention_energy.min()) / (attention_energy.max() - attention_energy.min() + 1e-8)
+
+    # Weighted combination
+    attention_weight = 1.0 - gradient_weight
+    combined = gradient_weight * gradient_energy + attention_weight * attention_energy
+
+    return combined
+
+
 def find_vertical_seam(energy):
     """Find minimum energy vertical seam - VECTORIZED"""
     h, w = energy.shape
@@ -152,10 +203,16 @@ def remove_horizontal_seam(img_array, seam):
     return np.transpose(remove_vertical_seam(np.transpose(img_array, (1, 0, 2)) if img_array.ndim == 3 else img_array.T, seam), (1, 0, 2) if img_array.ndim == 3 else (1, 0))
 
 
-def seam_carve_image(img, attention_map, target_reduction):
+def seam_carve_image(img, attention_map, target_reduction, gradient_weight=0.0):
     """
     Perform seam carving to reduce image size.
-    Optimized version with vectorized operations.
+    Uses combined energy: gradient (edges) + attention.
+
+    Args:
+        img: PIL Image
+        attention_map: Attention values from DINOv2
+        target_reduction: Target pixel reduction (0-1)
+        gradient_weight: Weight for gradient energy (0.0 = 0% gradient, 100% attention)
     """
     img_array = np.array(img)
     h, w = img_array.shape[:2]
@@ -171,14 +228,14 @@ def seam_carve_image(img, attention_map, target_reduction):
 
     # Remove vertical seams
     for _ in range(num_vertical_seams):
-        energy = 1.0 - current_attention
+        energy = compute_combined_energy(img_array, current_attention, gradient_weight)
         seam = find_vertical_seam(energy)
         img_array = remove_vertical_seam(img_array, seam)
         current_attention = remove_vertical_seam(current_attention, seam)
 
     # Remove horizontal seams
     for _ in range(num_horizontal_seams):
-        energy = 1.0 - current_attention
+        energy = compute_combined_energy(img_array, current_attention, gradient_weight)
         seam = find_vertical_seam(energy.T)
         img_array = remove_horizontal_seam(img_array, seam)
         current_attention = remove_horizontal_seam(current_attention[:, :, np.newaxis], seam).squeeze() if current_attention.ndim == 2 else remove_horizontal_seam(current_attention, seam)
