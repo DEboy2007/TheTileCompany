@@ -14,67 +14,22 @@ import os
 import json
 import hashlib
 from pathlib import Path
-import subprocess
-import time
-import atexit
 
 # Configuration
 BACKEND_URL = "http://localhost:5001"
 CACHE_DIR = Path("cache/compressed_images")
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
-# Global backend process
-backend_process = None
 
-
-def start_backend_server():
-    """Start the Flask backend server unobtrusively in the background."""
-    global backend_process
-
-    # Check if backend is already running
+def check_backend_health():
+    """Check if backend server is running and accessible."""
     try:
         response = requests.get(f"{BACKEND_URL}/health", timeout=2)
         if response.status_code == 200:
-            st.sidebar.success("Backend server is running")
-            return
+            return True
     except requests.exceptions.RequestException:
         pass
-
-    # Start the backend
-    backend_dir = Path(__file__).parent / "backend"
-
-    st.sidebar.info("Starting backend server...")
-    backend_process = subprocess.Popen(
-        ["python", "app.py"],
-        cwd=str(backend_dir),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE
-    )
-
-    # Wait for server to be ready
-    max_attempts = 30
-    for i in range(max_attempts):
-        try:
-            response = requests.get(f"{BACKEND_URL}/health", timeout=1)
-            if response.status_code == 200:
-                st.sidebar.success("Backend server started successfully")
-                return
-        except requests.exceptions.RequestException:
-            time.sleep(1)
-
-    st.sidebar.error("Failed to start backend server")
-
-
-def stop_backend_server():
-    """Stop the backend server on exit."""
-    global backend_process
-    if backend_process:
-        backend_process.terminate()
-        backend_process.wait()
-
-
-# Register cleanup handler
-atexit.register(stop_backend_server)
+    return False
 
 
 def get_image_hash(image_bytes):
@@ -205,8 +160,24 @@ def main():
     then query them with a Vision Transformer-based chatbot.
     """)
 
-    # Start backend server
-    start_backend_server()
+    # Check if backend server is running
+    if not check_backend_health():
+        st.error(f"""
+        **Backend server is not running!**
+
+        Please start the backend server before using this app:
+
+        ```bash
+        cd backend
+        python app.py
+        ```
+
+        The backend should be running at: {BACKEND_URL}
+        """)
+        st.stop()
+
+    # Show backend status in sidebar
+    st.sidebar.success(f"✓ Backend connected at {BACKEND_URL}")
 
     # Sidebar controls
     st.sidebar.header("Compression Settings")
