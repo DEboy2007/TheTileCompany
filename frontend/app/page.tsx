@@ -1,43 +1,39 @@
+'use client';
+
+import { useRef } from 'react';
+import ImageUploadBox, { ImageUploadBoxHandle } from '@/components/ImageUploadBox';
+
 export default function Home() {
+  const uploadBoxRef = useRef<ImageUploadBoxHandle>(null);
   return (
-    <main className="min-h-screen bg-[#FAF9F5]">
+    <main className="bg-[#FAF9F5]">
       {/* Hero Section */}
-      <section className="min-h-[80vh] flex items-center justify-center px-6 py-20">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="space-y-6">
-            <h1 className="serif-display text-[var(--color-dark)]">
-              Supercharge LLM performance by removing redundant pixels
-            </h1>
-            <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
-              Reduce image tokens by up to 95% while preserving semantic information. Our intelligent pixel pruning technology identifies and removes irrelevant pixels, cutting inference costs and accelerating LLM performance.
-            </p>
+      <section className="min-h-screen flex items-center justify-center px-6 py-20 -mt-16 pt-16">
+        <div className="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div className="space-y-8">
+            <div className="space-y-6">
+              <h1 className="text-5xl text-[var(--color-dark)] mb-6 mt-8 first:mt-0 font-serif">
+                Supercharge LLM performance by removing redundant pixels
+              </h1>
+              <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
+                Reduce image tokens by up to 95% while preserving semantic information. Our intelligent pixel pruning technology identifies and removes irrelevant pixels, cutting inference costs and accelerating LLM performance.
+              </p>
+            </div>
+
+            {/* CTA Button */}
+            <div>
+              <button onClick={() => uploadBoxRef.current?.triggerUpload()} data-slot="button" className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all cursor-pointer disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive bg-black text-[#FAF9F5] hover:bg-black/90 h-9 has-[>svg]:px-3 px-8 py-2 font-mono">
+                Upload an image to get started
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-right ml-1 w-5 h-5" aria-hidden="true">
+                  <path d="M5 12h14"></path>
+                  <path d="m12 5 7 7-7 7"></path>
+                </svg>
+              </button>
+            </div>
           </div>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 pt-4">
-            <button className="btn-primary">
-              Start Free
-            </button>
-            <button className="btn-outline">
-              Learn More
-            </button>
-          </div>
-
-          {/* Key Stats */}
-          <div className="grid grid-cols-3 gap-8 pt-12">
-            <div>
-              <p className="text-3xl font-bold text-[var(--color-dark)] mb-1">95%</p>
-              <p className="text-sm text-gray-600">Token reduction</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-[var(--color-dark)] mb-1">10x</p>
-              <p className="text-sm text-gray-600">Faster inference</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-[var(--color-dark)] mb-1">0%</p>
-              <p className="text-sm text-gray-600">Quality loss</p>
-            </div>
-          </div>
+          {/* Upload Box */}
+          <ImageUploadBox ref={uploadBoxRef} />
         </div>
       </section>
 

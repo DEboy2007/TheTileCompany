@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-@import url('https://cloud.typekit.net/wka8dks.css');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap');
 
 @import "tailwindcss";
 
@@ -11,8 +10,8 @@
   --color-text: #333333;
   --color-accent: #0066cc;
   --font-mono: 'IBM Plex Mono', monospace;
-  --font-serif: 'Tiempos Text Web', serif;
-  --font-body: 'Tiempos Text Web', serif;
+  --font-serif: 'Instrument Serif', serif;
+  --font-body: 'Instrument Serif', serif;
 }
 
 @layer base {
