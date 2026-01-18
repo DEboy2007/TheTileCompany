@@ -158,14 +158,20 @@ def generate_embedding(image, vit_processor, vit_model):
     return embedding
 
 
-def generate_caption(image, blip_processor, blip_model):
-    """Generate caption from image using BLIP."""
+def generate_caption(image, blip_processor, blip_model, temperature=0.3):
+    """Generate caption from image using BLIP with temperature control."""
     import torch
 
     inputs = blip_processor(images=image, return_tensors="pt")
 
     with torch.no_grad():
-        outputs = blip_model.generate(**inputs, max_length=50)
+        outputs = blip_model.generate(
+            **inputs,
+            max_length=50,
+            temperature=temperature,
+            do_sample=True if temperature > 0 else False,
+            top_p=0.9
+        )
 
     caption = blip_processor.decode(outputs[0], skip_special_tokens=True)
     return caption
@@ -236,17 +242,40 @@ def main():
         st.session_state.compressed_images = []
     if 'embeddings_cache' not in st.session_state:
         st.session_state.embeddings_cache = {}
+    if 'processed_files' not in st.session_state:
+        st.session_state.processed_files = set()
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+
+    # Sidebar - Caption temperature
+    st.sidebar.divider()
+    caption_temperature = st.sidebar.slider(
+        "Caption Temperature",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.3,
+        step=0.1,
+        help="Lower = more deterministic captions"
+    )
 
     # Image upload section
     st.header("1. Upload Images")
     uploaded_files = st.file_uploader(
-        "Choose images to compress",
+        "Choose images to compress (auto-processes on upload)",
         type=['png', 'jpg', 'jpeg'],
         accept_multiple_files=True
     )
 
     if uploaded_files:
+        # Load vision models once
+        with st.spinner("Loading vision models (ViT + BLIP)..."):
+            models = load_vision_models()
+
         for uploaded_file in uploaded_files:
+            # Skip if already processed
+            if uploaded_file.name in st.session_state.processed_files:
+                continue
+
             image_bytes = uploaded_file.read()
             original_image = Image.open(BytesIO(image_bytes))
 
@@ -256,46 +285,85 @@ def main():
                 st.subheader("Original")
                 st.image(original_image, use_container_width=True)
 
-            if st.button(f"Compress {uploaded_file.name}", key=f"compress_{uploaded_file.name}"):
-                with st.spinner("Compressing image..."):
-                    result = compress_image_api(image_bytes, reduction, threshold)
+            # Auto-compress
+            with st.spinner(f"Compressing {uploaded_file.name}..."):
+                result = compress_image_api(image_bytes, reduction, threshold)
 
-                    if result:
-                        with col2:
-                            st.subheader("Gray Overlay")
-                            st.image(result['gray_overlay'], use_container_width=True)
+                if result:
+                    with col2:
+                        st.subheader("Gray Overlay")
+                        st.image(result['gray_overlay'], use_container_width=True)
 
-                        with col3:
-                            st.subheader("Compressed")
-                            st.image(result['compressed_image'], use_container_width=True)
+                    with col3:
+                        st.subheader("Compressed")
+                        st.image(result['compressed_image'], use_container_width=True)
 
-                        # Display stats
-                        st.success(f"✓ Compressed! {result['reduction_pct']:.1f}% reduction")
-                        if result.get('from_cache'):
-                            st.info("Loaded from cache")
+                    # Display stats
+                    st.success(f"✓ Compressed! {result['reduction_pct']:.1f}% reduction")
+                    if result.get('from_cache'):
+                        st.info("Loaded from cache")
 
-                        # Add to session state for chatbot
-                        st.session_state.compressed_images.append({
-                            'name': uploaded_file.name,
-                            'original': original_image,
-                            'compressed': result['compressed_image'],
-                            'stats': result['stats']
-                        })
+                    # Add to session state
+                    st.session_state.compressed_images.append({
+                        'name': uploaded_file.name,
+                        'original': original_image,
+                        'compressed': result['compressed_image'],
+                        'stats': result['stats']
+                    })
+
+                    # Auto-generate embeddings and captions
+                    with st.spinner(f"Generating embeddings and captions for {uploaded_file.name}..."):
+                        # Generate embeddings
+                        original_embedding = generate_embedding(
+                            original_image,
+                            models['vit_processor'],
+                            models['vit_model']
+                        )
+                        compressed_embedding = generate_embedding(
+                            result['compressed_image'],
+                            models['vit_processor'],
+                            models['vit_model']
+                        )
+
+                        # Generate captions with low temperature
+                        original_caption = generate_caption(
+                            original_image,
+                            models['blip_processor'],
+                            models['blip_model'],
+                            temperature=caption_temperature
+                        )
+                        compressed_caption = generate_caption(
+                            result['compressed_image'],
+                            models['blip_processor'],
+                            models['blip_model'],
+                            temperature=caption_temperature
+                        )
+
+                        # Compute similarity
+                        similarity = compute_embedding_similarity(original_embedding, compressed_embedding)
+
+                        # Store in session state
+                        st.session_state.embeddings_cache[uploaded_file.name] = {
+                            'original_embedding': original_embedding,
+                            'compressed_embedding': compressed_embedding,
+                            'original_caption': original_caption,
+                            'compressed_caption': compressed_caption,
+                            'similarity': similarity
+                        }
+
+                    # Mark as processed
+                    st.session_state.processed_files.add(uploaded_file.name)
 
             st.divider()
 
     # Embedding Comparison section
     if st.session_state.compressed_images:
         st.header("2. Embedding & Semantic Comparison")
-        st.markdown("Compare embeddings and decoded captions from original vs compressed images to demonstrate compression effectiveness.")
-
-        # Load vision models
-        with st.spinner("Loading vision models (ViT + BLIP)..."):
-            models = load_vision_models()
+        st.markdown("Compare embeddings and decoded captions from original vs compressed images.")
 
         # Select image to analyze
         selected_image_name = st.selectbox(
-            "Select image to analyze",
+            "Select image to view",
             [img['name'] for img in st.session_state.compressed_images]
         )
 
@@ -304,46 +372,7 @@ def main():
             if img['name'] == selected_image_name
         )
 
-        # Generate embeddings and captions button
-        if st.button("Generate Embeddings & Captions", key="generate_embeddings"):
-            with st.spinner("Generating embeddings and captions..."):
-                # Generate embeddings
-                original_embedding = generate_embedding(
-                    selected_image['original'],
-                    models['vit_processor'],
-                    models['vit_model']
-                )
-                compressed_embedding = generate_embedding(
-                    selected_image['compressed'],
-                    models['vit_processor'],
-                    models['vit_model']
-                )
-
-                # Generate captions (decode embeddings)
-                original_caption = generate_caption(
-                    selected_image['original'],
-                    models['blip_processor'],
-                    models['blip_model']
-                )
-                compressed_caption = generate_caption(
-                    selected_image['compressed'],
-                    models['blip_processor'],
-                    models['blip_model']
-                )
-
-                # Compute similarity
-                similarity = compute_embedding_similarity(original_embedding, compressed_embedding)
-
-                # Store in session state
-                st.session_state.embeddings_cache[selected_image_name] = {
-                    'original_embedding': original_embedding,
-                    'compressed_embedding': compressed_embedding,
-                    'original_caption': original_caption,
-                    'compressed_caption': compressed_caption,
-                    'similarity': similarity
-                }
-
-        # Display results if available
+        # Display results (auto-generated during upload)
         if selected_image_name in st.session_state.embeddings_cache:
             cached = st.session_state.embeddings_cache[selected_image_name]
 
@@ -401,9 +430,94 @@ def main():
                 st.write(f"- Min: {cached['compressed_embedding'].min().item():.4f}")
                 st.write(f"- Max: {cached['compressed_embedding'].max().item():.4f}")
 
+    # Chat Interface section
+    if st.session_state.compressed_images:
+        st.header("3. Dual Image Query Chat")
+        st.markdown("Ask questions about your images. Both original and compressed images will be queried simultaneously for comparison.")
+
+        # Load VQA model
+        @st.cache_resource
+        def load_vqa_model():
+            from transformers import BlipProcessor, BlipForQuestionAnswering
+            processor = BlipProcessor.from_pretrained("Salesforce/blip-vqa-base")
+            model = BlipForQuestionAnswering.from_pretrained("Salesforce/blip-vqa-base")
+            return processor, model
+
+        vqa_processor, vqa_model = load_vqa_model()
+
+        # Select image for chat
+        chat_image_name = st.selectbox(
+            "Select image to query",
+            [img['name'] for img in st.session_state.compressed_images],
+            key="chat_image_selector"
+        )
+
+        chat_image = next(
+            img for img in st.session_state.compressed_images
+            if img['name'] == chat_image_name
+        )
+
+        # Display both images
+        col1, col2 = st.columns(2)
+        with col1:
+            st.image(chat_image['original'], caption="Original Image", use_container_width=True)
+        with col2:
+            st.image(chat_image['compressed'], caption="Compressed Image", use_container_width=True)
+
+        # Chat input
+        question = st.text_input("Ask a question about the images:", key="chat_question")
+
+        if question:
+            with st.spinner("Querying both images..."):
+                import torch
+
+                # Query original image
+                inputs_original = vqa_processor(chat_image['original'], question, return_tensors="pt")
+                with torch.no_grad():
+                    outputs_original = vqa_model.generate(**inputs_original)
+                answer_original = vqa_processor.decode(outputs_original[0], skip_special_tokens=True)
+
+                # Query compressed image
+                inputs_compressed = vqa_processor(chat_image['compressed'], question, return_tensors="pt")
+                with torch.no_grad():
+                    outputs_compressed = vqa_model.generate(**inputs_compressed)
+                answer_compressed = vqa_processor.decode(outputs_compressed[0], skip_special_tokens=True)
+
+                # Add to chat history
+                st.session_state.chat_history.append({
+                    'image': chat_image_name,
+                    'question': question,
+                    'answer_original': answer_original,
+                    'answer_compressed': answer_compressed,
+                    'answers_match': answer_original.lower().strip() == answer_compressed.lower().strip()
+                })
+
+        # Display chat history
+        if st.session_state.chat_history:
+            st.subheader("Chat History")
+            for i, chat in enumerate(reversed(st.session_state.chat_history[-10:])):
+                with st.container():
+                    st.markdown(f"**Q ({chat['image']}):** {chat['question']}")
+
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.markdown("**Original Answer:**")
+                        st.info(chat['answer_original'])
+                    with col2:
+                        st.markdown("**Compressed Answer:**")
+                        st.info(chat['answer_compressed'])
+
+                    # Show match status
+                    if chat['answers_match']:
+                        st.success("✓ Identical answers - perfect semantic preservation!")
+                    else:
+                        st.warning(f"⚠ Different answers - check semantic similarity")
+
+                    st.divider()
+
     # Statistics
     if st.session_state.compressed_images:
-        st.header("3. Statistics")
+        st.header("4. Statistics")
         total_original = sum(img['stats']['original_pixels'] for img in st.session_state.compressed_images)
         total_compressed = sum(img['stats']['compressed_pixels'] for img in st.session_state.compressed_images)
         total_saved = total_original - total_compressed
