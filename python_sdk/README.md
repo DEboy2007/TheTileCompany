@@ -134,8 +134,13 @@ mypy python_sdk
 
 ## License
 
-MIT License - see LICENSE file for details.
+This project is licensed under CC BY-NC-ND 4.0 (Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International).
 
-## Contributing
+- Personal and educational use is permitted
+- Commercial use is prohibited
+- Modifications and derivatives are not permitted for distribution
+- Attribution to NexHacks Team is required
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+For commercial licensing inquiries, please contact NexHacks Team.
+
+See LICENSE file for full details.
