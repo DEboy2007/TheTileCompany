@@ -7,7 +7,6 @@ Usage:
 """
 
 import argparse
-import os
 import numpy as np
 import torch
 import requests
@@ -16,17 +15,24 @@ from PIL import Image
 import base64
 
 # Constants
-DEFAULT_REDUCTION = 0.30  # 30% token reduction
+DEFAULT_REDUCTION = 0.30
 IMAGE_SIZE = 518
 PATCH_SIZE = 14
 
+# Global model cache
+_dino_model = None
+
 
 def load_dino_model():
-    """Load DINOv2 model"""
-    print("Loading DINOv2 model...")
-    model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
-    model.eval()
-    return model
+    """Load DINOv2 model (cached)"""
+    global _dino_model
+    if _dino_model is None:
+        print("Loading DINOv2 model...")
+        _dino_model = torch.hub.load('facebookresearch/dinov2', 'dinov2_vits14')
+        _dino_model.eval()
+        if torch.cuda.is_available():
+            _dino_model = _dino_model.cuda()
+    return _dino_model
 
 
 def get_attention_map(model, img):
@@ -39,39 +45,47 @@ def get_attention_map(model, img):
     ])
 
     img_tensor = transform(img).unsqueeze(0)
+    if torch.cuda.is_available():
+        img_tensor = img_tensor.cuda()
+
     w, h = img.size
     w_patches = w // PATCH_SIZE
     h_patches = h // PATCH_SIZE
 
     with torch.no_grad():
-        attentions = []
+        # Use built-in forward for attention - much faster
+        features = model.forward_features(img_tensor)
+        # Get attention from last block
         x = model.patch_embed(img_tensor)
         cls_tokens = model.cls_token.expand(x.shape[0], -1, -1)
+        if torch.cuda.is_available():
+            cls_tokens = cls_tokens.cuda()
         x = torch.cat((cls_tokens, x), dim=1)
         x = model.pos_embed + x
 
-        for blk in model.blocks:
-            attn_module = blk.attn
-            B, N, C = x.shape
-            qkv = attn_module.qkv(x).reshape(B, N, 3, attn_module.num_heads, C // attn_module.num_heads).permute(2, 0, 3, 1, 4)
-            q, k, v = qkv.unbind(0)
-            scale = (C // attn_module.num_heads) ** -0.5
-            attn_weights = (q @ k.transpose(-2, -1)) * scale
-            attn_weights = attn_weights.softmax(dim=-1)
-            attentions.append(attn_weights.detach())
-            attn_output = (attn_weights @ v).transpose(1, 2).reshape(B, N, C)
-            attn_output = attn_module.proj(attn_output)
-            x = x + attn_output
-            x = x + blk.mlp(blk.norm2(x))
+        # Only compute attention for last block
+        for blk in model.blocks[:-1]:
+            x = blk(x)
+
+        # Last block - extract attention
+        blk = model.blocks[-1]
+        attn_module = blk.attn
+        B, N, C = x.shape
+        qkv = attn_module.qkv(x).reshape(B, N, 3, attn_module.num_heads, C // attn_module.num_heads).permute(2, 0, 3, 1, 4)
+        q, k, v = qkv.unbind(0)
+        scale = (C // attn_module.num_heads) ** -0.5
+        attn_weights = (q @ k.transpose(-2, -1)) * scale
+        attn_weights = attn_weights.softmax(dim=-1)
 
     # Use last layer attention
-    attn = attentions[-1]
-    cls_attn = attn[0, :, 0, 1:].mean(dim=0)
+    cls_attn = attn_weights[0, :, 0, 1:].mean(dim=0)
     cls_attn = cls_attn.reshape(h_patches, w_patches).cpu().numpy()
 
-    # Resize to image dimensions
-    cls_attn_img = Image.fromarray(cls_attn)
-    cls_attn_resized = np.array(cls_attn_img.resize(img.size, Image.BILINEAR))
+    # Resize to image dimensions using scipy for speed
+    from scipy.ndimage import zoom
+    scale_h = h / h_patches
+    scale_w = w / w_patches
+    cls_attn_resized = zoom(cls_attn, (scale_h, scale_w), order=1)
 
     # Normalize to 0-1
     cls_attn_resized = (cls_attn_resized - cls_attn_resized.min()) / (cls_attn_resized.max() - cls_attn_resized.min() + 1e-8)
@@ -80,104 +94,72 @@ def get_attention_map(model, img):
 
 
 def create_gray_overlay(img, attention_map, threshold=0.3):
-    """
-    Create image with low-attention areas grayed out.
-
-    Args:
-        img: PIL Image
-        attention_map: 2D numpy array of attention values (0-1)
-        threshold: Attention threshold below which pixels are grayed
-
-    Returns:
-        PIL Image with gray overlay on low-attention regions
-    """
-    img_array = np.array(img).astype(np.float32)
-
-    # Create mask: 1 where attention is high, 0 where low
-    mask = (attention_map >= threshold).astype(np.float32)
-    mask = np.expand_dims(mask, axis=2)
-
-    # Convert low-attention areas to grayscale
+    """Create image with low-attention areas grayed out."""
+    img_array = np.array(img, dtype=np.float32)
+    mask = (attention_map >= threshold).astype(np.float32)[:, :, np.newaxis]
     gray = np.mean(img_array, axis=2, keepdims=True)
-    gray = np.repeat(gray, 3, axis=2)
-
-    # Blend: keep color where attention is high, gray where low
     result = img_array * mask + gray * (1 - mask)
-
     return Image.fromarray(result.astype(np.uint8))
 
 
-def compute_seam_energy(img_array, attention_map):
-    """Compute energy for seam carving using inverted attention"""
-    energy = 1.0 - attention_map
-    energy = (energy - energy.min()) / (energy.max() - energy.min() + 1e-8)
-    energy = energy * 255
-    return energy
-
-
 def find_vertical_seam(energy):
-    """Find minimum energy vertical seam using dynamic programming"""
+    """Find minimum energy vertical seam - VECTORIZED"""
     h, w = energy.shape
-    M = energy.copy()
-    backtrack = np.zeros_like(M, dtype=int)
+    M = energy.copy().astype(np.float64)
+    backtrack = np.zeros((h, w), dtype=np.int32)
 
+    # Pad for easier indexing
     for i in range(1, h):
-        for j in range(w):
-            if j == 0:
-                idx = np.argmin(M[i-1, j:j+2])
-                backtrack[i, j] = j + idx
-                min_energy = M[i-1, j + idx]
-            elif j == w - 1:
-                idx = np.argmin(M[i-1, j-1:j+1])
-                backtrack[i, j] = j - 1 + idx
-                min_energy = M[i-1, j - 1 + idx]
-            else:
-                idx = np.argmin(M[i-1, j-1:j+2])
-                backtrack[i, j] = j - 1 + idx
-                min_energy = M[i-1, j - 1 + idx]
-            M[i, j] += min_energy
+        # Get the three possible predecessors for each pixel
+        left = np.concatenate([[np.inf], M[i-1, :-1]])
+        middle = M[i-1, :]
+        right = np.concatenate([M[i-1, 1:], [np.inf]])
 
-    seam = np.zeros(h, dtype=int)
+        # Stack and find minimum
+        stacked = np.vstack([left, middle, right])
+        min_idx = np.argmin(stacked, axis=0)
+        min_val = np.min(stacked, axis=0)
+
+        M[i] += min_val
+        backtrack[i] = np.arange(w) + min_idx - 1
+        backtrack[i] = np.clip(backtrack[i], 0, w - 1)
+
+    # Backtrack
+    seam = np.zeros(h, dtype=np.int32)
     seam[-1] = np.argmin(M[-1])
-    for i in range(h-2, -1, -1):
-        seam[i] = backtrack[i+1, seam[i+1]]
+    for i in range(h - 2, -1, -1):
+        seam[i] = backtrack[i + 1, seam[i + 1]]
 
     return seam
 
 
 def remove_vertical_seam(img_array, seam):
-    """Remove a vertical seam from the image"""
-    h, w, c = img_array.shape
-    output = np.zeros((h, w-1, c), dtype=img_array.dtype)
-    for i in range(h):
-        col = seam[i]
-        output[i, :, :] = np.delete(img_array[i, :, :], col, axis=0)
-    return output
+    """Remove vertical seam - VECTORIZED"""
+    h, w = img_array.shape[:2]
+    if img_array.ndim == 3:
+        c = img_array.shape[2]
+        mask = np.ones((h, w), dtype=bool)
+        mask[np.arange(h), seam] = False
+        return img_array[mask].reshape(h, w - 1, c)
+    else:
+        mask = np.ones((h, w), dtype=bool)
+        mask[np.arange(h), seam] = False
+        return img_array[mask].reshape(h, w - 1)
 
 
 def remove_horizontal_seam(img_array, seam):
-    """Remove a horizontal seam from the image"""
-    img_t = np.transpose(img_array, (1, 0, 2))
-    img_t = remove_vertical_seam(img_t, seam)
-    return np.transpose(img_t, (1, 0, 2))
+    """Remove horizontal seam"""
+    return np.transpose(remove_vertical_seam(np.transpose(img_array, (1, 0, 2)) if img_array.ndim == 3 else img_array.T, seam), (1, 0, 2) if img_array.ndim == 3 else (1, 0))
 
 
 def seam_carve_image(img, attention_map, target_reduction):
     """
-    Perform seam carving to reduce image size by target_reduction.
-
-    Args:
-        img: PIL Image
-        attention_map: 2D numpy array of attention values
-        target_reduction: float between 0 and 1 (e.g., 0.3 for 30% reduction)
-
-    Returns:
-        PIL Image (carved)
+    Perform seam carving to reduce image size.
+    Optimized version with vectorized operations.
     """
     img_array = np.array(img)
     h, w = img_array.shape[:2]
 
-    # Calculate target dimensions
     scale_factor = np.sqrt(1 - target_reduction)
     target_width = int(w * scale_factor)
     target_height = int(h * scale_factor)
@@ -188,23 +170,18 @@ def seam_carve_image(img, attention_map, target_reduction):
     current_attention = attention_map.copy()
 
     # Remove vertical seams
-    for i in range(num_vertical_seams):
-        h_curr, w_curr = img_array.shape[:2]
-        attention_resized = np.array(Image.fromarray(current_attention).resize((w_curr, h_curr), Image.BILINEAR))
-        energy = compute_seam_energy(img_array, attention_resized)
+    for _ in range(num_vertical_seams):
+        energy = 1.0 - current_attention
         seam = find_vertical_seam(energy)
         img_array = remove_vertical_seam(img_array, seam)
-        current_attention = remove_vertical_seam(np.expand_dims(attention_resized, axis=2), seam).squeeze()
+        current_attention = remove_vertical_seam(current_attention, seam)
 
     # Remove horizontal seams
-    for i in range(num_horizontal_seams):
-        h_curr, w_curr = img_array.shape[:2]
-        attention_resized = np.array(Image.fromarray(current_attention).resize((w_curr, h_curr), Image.BILINEAR))
-        energy = compute_seam_energy(img_array, attention_resized)
-        energy_t = energy.T
-        seam = find_vertical_seam(energy_t)
+    for _ in range(num_horizontal_seams):
+        energy = 1.0 - current_attention
+        seam = find_vertical_seam(energy.T)
         img_array = remove_horizontal_seam(img_array, seam)
-        current_attention = remove_horizontal_seam(np.expand_dims(attention_resized, axis=2), seam).squeeze()
+        current_attention = remove_horizontal_seam(current_attention[:, :, np.newaxis], seam).squeeze() if current_attention.ndim == 2 else remove_horizontal_seam(current_attention, seam)
 
     return Image.fromarray(img_array)
 
@@ -224,12 +201,11 @@ def load_image(image_path_or_url):
     else:
         img = Image.open(image_path_or_url).convert('RGB')
 
-    # Resize to DINOv2 size
     img_resized = img.resize((IMAGE_SIZE, IMAGE_SIZE), Image.BILINEAR)
     return img_resized
 
 
-def compress(image_path_or_url, reduction=DEFAULT_REDUCTION, threshold=0.3):
+def compress(image_path_or_url, reduction=DEFAULT_REDUCTION, threshold=0.3, model=None):
     """
     Compress image using attention-guided seam carving.
 
@@ -237,14 +213,10 @@ def compress(image_path_or_url, reduction=DEFAULT_REDUCTION, threshold=0.3):
         image_path_or_url: Path or URL to image
         reduction: Target pixel/token reduction (0-1)
         threshold: Attention threshold for gray overlay visualization
+        model: Optional pre-loaded DINOv2 model
 
     Returns:
-        dict with:
-            - original_image: PIL Image
-            - gray_overlay: PIL Image with low-attention areas grayed
-            - compressed_image: PIL Image (seam carved)
-            - reduction_pct: Actual percentage of pixels saved
-            - stats: Additional statistics
+        dict with original_image, gray_overlay, compressed_image, reduction_pct, stats
     """
     print("=" * 60)
     print("IMAGE COMPRESSION API")
@@ -258,10 +230,11 @@ def compress(image_path_or_url, reduction=DEFAULT_REDUCTION, threshold=0.3):
 
     # Extract attention
     print("\n[2/3] Extracting attention map (DINOv2)...")
-    model = load_dino_model()
+    if model is None:
+        model = load_dino_model()
     attention_map = get_attention_map(model, img)
 
-    # Create gray overlay visualization
+    # Create gray overlay
     gray_overlay = create_gray_overlay(img, attention_map, threshold)
     print(f"      Gray overlay created (threshold={threshold})")
 
