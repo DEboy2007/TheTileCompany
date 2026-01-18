@@ -1,11 +1,12 @@
 """
-API module for compression endpoints.
+API module for image compression.
+Uses attention-guided seam carving.
 """
 
 from .routes import create_app
-from .service import run_compression
+from .service import compress_image
 
 __all__ = [
     'create_app',
-    'run_compression'
+    'compress_image'
 ]

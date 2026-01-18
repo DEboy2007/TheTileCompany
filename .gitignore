@@ -1,6 +1,7 @@
 /.env
 nexhacks/
 data_raw/
+Image_Compression_Testing/images
 # dependencies
 /node_modules
 /.pnp
