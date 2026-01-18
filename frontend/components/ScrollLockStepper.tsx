@@ -23,6 +23,7 @@ export const ScrollLockStepper: React.FC<ScrollLockStepperProps> = ({ steps, upl
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<{ src: string; alt: string } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -124,12 +125,14 @@ export const ScrollLockStepper: React.FC<ScrollLockStepperProps> = ({ steps, upl
                 {/* Image/Visual content */}
                 {currentStep.image && (
                   <div className="flex items-center justify-center">
-                    <div className="relative">
+                    <div className="relative cursor-pointer group">
                       <img
                         src={currentStep.image}
                         alt={currentStep.imageAlt || currentStep.title}
-                        className="w-full rounded-lg shadow-lg border border-gray-300"
+                        className="w-full rounded-lg shadow-lg border border-gray-300 group-hover:shadow-xl transition-shadow cursor-pointer"
+                        onClick={() => setSelectedImage({ src: currentStep.image!, alt: currentStep.imageAlt || currentStep.title })}
                       />
+                      <div className="absolute inset-0 rounded-lg bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-200 pointer-events-none" />
                     </div>
                   </div>
                 )}
@@ -177,6 +180,53 @@ export const ScrollLockStepper: React.FC<ScrollLockStepperProps> = ({ steps, upl
           />
         ))}
       </div>
+
+      {/* Image Modal */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setSelectedImage(null)}
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 pointer-events-auto"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              transition={{ duration: 0.3, type: 'spring', stiffness: 300, damping: 30 }}
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full h-[90vh] max-w-6xl"
+            >
+              <img
+                src={selectedImage.src}
+                alt={selectedImage.alt}
+                className="w-full h-full object-contain rounded-lg"
+              />
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute top-4 right-4 bg-white text-black rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-200 transition-colors"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Spacer to allow scrolling past the carousel */}
       <div className="h-screen bg-[#FAF9F5]" />
