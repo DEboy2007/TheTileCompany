@@ -23,7 +23,7 @@
   "homepage": "https://github.com/DEboy2007/NexHacksProject#readme",
   "dependencies": {
     "@supabase/supabase-js": "^2.90.1",
-    "framer-motion": "^12.26.2",
+    "framer-motion": "^12.27.0",
     "next": "^16.1.3",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",

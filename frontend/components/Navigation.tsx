@@ -9,9 +9,7 @@ export default function Navigation() {
   const links = [
     { href: '/', label: 'Home' },
     { href: '/compress', label: 'Compress' },
-    { href: '/benchmark', label: 'Benchmark' },
     { href: '/docs', label: 'Docs' },
-    { href: '/console', label: 'Console' },
   ];
 
   return (

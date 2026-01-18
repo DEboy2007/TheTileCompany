@@ -7,29 +7,6 @@ export interface ImageUploadBoxHandle {
 }
 
 interface ImageUploadBoxProps {
-<<<<<<< HEAD
-  onImageUpload?: (base64Image: string) => void;
-}
-
-const ImageUploadBox = forwardRef<ImageUploadBoxHandle, ImageUploadBoxProps>(({ onImageUpload }, ref) => {
-  const [image, setImage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const result = event.target?.result as string;
-        setImage(result);
-        if (onImageUpload) {
-          onImageUpload(result);
-        }
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-=======
   image: string | null;
   onImageChange: (image: string | null) => void;
 }
@@ -37,7 +14,6 @@ const ImageUploadBox = forwardRef<ImageUploadBoxHandle, ImageUploadBoxProps>(({ 
 const ImageUploadBox = forwardRef<ImageUploadBoxHandle, ImageUploadBoxProps>(
   ({ image, onImageChange }, ref) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
->>>>>>> df6c5abc93532b82af08b81aa59def7f84514eec
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -80,13 +56,7 @@ const ImageUploadBox = forwardRef<ImageUploadBoxHandle, ImageUploadBoxProps>(
               </svg>
             </div>
           </div>
-<<<<<<< HEAD
-        </div>
-      ) : (
-        <div className="w-full space-y-4">
-=======
         ) : (
->>>>>>> df6c5abc93532b82af08b81aa59def7f84514eec
           <div className="w-full flex items-center justify-center p-6" style={{
             animation: 'zoomIn 0.5s ease-out forwards',
           }}>
@@ -96,24 +66,6 @@ const ImageUploadBox = forwardRef<ImageUploadBoxHandle, ImageUploadBoxProps>(
               className="max-w-full max-h-80 rounded-lg object-cover"
             />
           </div>
-<<<<<<< HEAD
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              fileInputRef.current?.click();
-            }}
-            className="w-full py-2 px-4 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Change Image
-          </button>
-        </div>
-      )}
-      <style>{`
-        @keyframes zoomIn {
-          from {
-            opacity: 0;
-            transform: scale(0.92);
-=======
         )}
         <style>{`
           @keyframes zoomIn {
@@ -125,7 +77,6 @@ const ImageUploadBox = forwardRef<ImageUploadBoxHandle, ImageUploadBoxProps>(
               opacity: 1;
               transform: scale(1);
             }
->>>>>>> df6c5abc93532b82af08b81aa59def7f84514eec
           }
         `}</style>
       </div>

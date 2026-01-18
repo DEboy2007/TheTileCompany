@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import ImageUploadBox, { ImageUploadBoxHandle } from '@/components/ImageUploadBox';
 
 /**
@@ -31,7 +31,28 @@ export default function CompressPage() {
   const [result, setResult] = useState<CompressionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleImageUpload = (base64Image: string) => {
+  // Load image from sessionStorage on mount
+  useEffect(() => {
+    const storedImage = sessionStorage.getItem('uploadedImage');
+    if (storedImage) {
+      setUploadedImage(storedImage);
+      // Clear from sessionStorage
+      sessionStorage.removeItem('uploadedImage');
+    }
+  }, []);
+
+  // Auto-compress when image is loaded from sessionStorage
+  useEffect(() => {
+    if (uploadedImage && !result && !isCompressing && !error) {
+      // Check if this is a fresh load (no previous interaction)
+      const timer = setTimeout(() => {
+        handleCompress();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [uploadedImage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleImageChange = (base64Image: string | null) => {
     setUploadedImage(base64Image);
     setResult(null);
     setError(null);
@@ -160,7 +181,8 @@ export default function CompressPage() {
                 </h2>
                 <ImageUploadBox
                   ref={uploadBoxRef}
-                  onImageUpload={handleImageUpload}
+                  image={uploadedImage}
+                  onImageChange={handleImageChange}
                 />
               </div>
 

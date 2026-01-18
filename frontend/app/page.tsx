@@ -1,13 +1,37 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import ImageUploadBox, { ImageUploadBoxHandle } from '@/components/ImageUploadBox';
 import { ScrollLockStepper, StepData } from '@/components/ScrollLockStepper';
 
 export default function Home() {
+  const router = useRouter();
   const uploadBoxRef = useRef<ImageUploadBoxHandle>(null);
   const [image, setImage] = useState<string | null>(null);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
+
+  const handleImageChange = (newImage: string | null) => {
+    if (newImage) {
+      // Store image in sessionStorage and redirect to compress page
+      sessionStorage.setItem('uploadedImage', newImage);
+      router.push('/compress');
+    } else {
+      setImage(newImage);
+      setProcessedImage(null);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!image) return;
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setProcessedImage(image);
+    } catch (error) {
+      console.error('Error submitting image:', error);
+    }
+  };
 
   const pipelineSteps: StepData[] = [
     {
@@ -28,7 +52,7 @@ export default function Home() {
                   Supercharge LLM performance by removing redundant pixels
                 </h1>
                 <p className="text-lg text-gray-600 leading-relaxed max-w-2xl">
-                  Remove just the lowest 20% of relevant pixels to achieve 34.3% token reduction while preserving complete semantic integrity. Our intelligent pixel pruning technology identifies and removes irrelevant pixels, cutting inference costs and accelerating LLM performance.
+                  Remove just the lowest 30% of relevant pixels to achieve significant token reduction while preserving complete semantic integrity. Our intelligent pixel pruning technology identifies and removes irrelevant pixels, cutting inference costs and accelerating LLM performance.
                 </p>
               </div>
             ) : (
@@ -84,7 +108,7 @@ export default function Home() {
           <ImageUploadBox
             ref={uploadBoxRef}
             image={processedImage || image}
-            onImageChange={setImage}
+            onImageChange={handleImageChange}
           />
         </div>
       ),
@@ -135,10 +159,10 @@ export default function Home() {
       content: (
         <>
           <p>
-            With the pruning mask in hand, we execute the final step: <span className="font-bold text-gray-800">content-aware pixel removal</span>. Using the mask as our guide, intelligent algorithms eliminate every marked pixel while maintaining structural coherence and avoiding artifacts at boundaries.
+            With the pruning mask in hand, we execute the final step: <span className="font-bold text-gray-800">content-aware pixel removal</span>. Using the mask as our guide, an intelligent seam-carving algorithm eliminates every marked pixel while maintaining structural coherence and minimal distortion, preserving the underlying geometry of the image.
           </p>
           <p>
-            The result is a dramatically optimized image with <span className="font-bold text-gray-800">34.3% token reduction</span> when removing the lowest 20% of pixels, with complete semantic integrity preserved. Every remaining pixel has been validated as essential by the attention model, delivering your LLM a perfectly distilled visual representation, free of noise.
+            The result is a dramatically optimized image with <span className="font-bold text-gray-800">30% token reduction</span>, and nearly identical cosine similarity. Every remaining pixel has been validated as essential by the attention model, delivering your LLM a perfectly distilled visual representation, free of redundant information.
           </p>
         </>
       ),
@@ -146,17 +170,6 @@ export default function Home() {
       imageAlt: 'Seam carving comparison showing content-aware pixel removal results',
     },
   ];
-
-  const handleSubmit = async () => {
-    if (!image) return;
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setProcessedImage(image);
-    } catch (error) {
-      console.error('Error submitting image:', error);
-    }
-  };
 
   return (
     <main className="bg-[#FAF9F5]">
@@ -166,11 +179,10 @@ export default function Home() {
       {/* Navigation Links */}
       <section className="min-h-screen bg-white border-t border-gray-200 px-6 flex items-center justify-center">
         <div className="max-w-4xl mx-auto w-full">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {[
-              { href: '/benchmark', label: 'Benchmark', desc: 'Performance comparison' },
               { href: '/docs', label: 'Documentation', desc: 'Technical details' },
-              { href: '/console', label: 'Console', desc: 'Try it now' }
+              { href: '/compress', label: 'Try It Now', desc: 'Compress your images' }
             ].map((link) => (
               <a key={link.href} href={link.href} className="group">
                 <h3 className="font-bold text-[var(--color-dark)] mb-1 group-hover:text-gray-600 transition-colors">
