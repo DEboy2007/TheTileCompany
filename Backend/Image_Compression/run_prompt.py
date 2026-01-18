@@ -18,11 +18,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'API_TESTS', 'C
 
 import torch
 import requests
-import tokenc
 from PIL import Image
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_core.messages import HumanMessage
 from torchvision import transforms
 import numpy as np
 
@@ -53,6 +50,7 @@ def get_dino_model():
 
 def get_token_client():
     """Get TokenCompany client (cached)"""
+    import tokenc
     global _token_client
     if _token_client is None:
         _token_client = tokenc.TokenClient(api_key=os.getenv("TOKENCOMPANY"))
@@ -61,6 +59,7 @@ def get_token_client():
 
 def get_llm():
     """Get Gemini LLM (cached)"""
+    from langchain_google_genai import ChatGoogleGenerativeAI
     global _llm
     if _llm is None:
         _llm = ChatGoogleGenerativeAI(
@@ -228,6 +227,7 @@ def run_prompt(image_path_or_url, prompt, threshold=DEFAULT_THRESHOLD, aggressiv
     if verbose:
         print("\n[4/4] Querying Gemini with compressed inputs...")
 
+    from langchain_core.messages import HumanMessage
     llm = get_llm()
 
     # Create message with image
